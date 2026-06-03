@@ -186,26 +186,10 @@ app.delete('/api/patients/:id', async (req, res) => {
     }
 });
 
-// ==========================================================================
-// 🌐 REACT FRONTEND INTEGRATION (ALL-IN-ONE DEPLOYMENT)
-// ==========================================================================
+// የሪአክት ቢልድ ፋይሎችን ለማንበብ (ይህን መስመር ፈልገህ አስተካክለው)
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// 🔀 ከExpress 5 የራውት ህግ ነጻ የሆነው Middleware Catch-all አማራጭ
-app.use((req, res, next) => {
-    // የመጡት ጥያቄዎች ለኤፒአይ (/api/) ወይም ለፋይል (/uploads/) ካልሆኑ ወደ React index.html ይላኩ
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/voice')) {
-        return res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-    }
-    next();
-});
-
-// ==========================================================================
-// 🚀 SERVER INITIALIZATION
-// ==========================================================================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`================================================`);
-    console.log(`🏥 Dr. Getaneh Clinic ሰርቨር በፖርት ${PORT} ተነስቷል`);
-    console.log(`================================================`);
+// ከሁሉም ራውቶች በታች (Catch-all route) የሚገኘውን ኮድ ደግሞ በዚህ ተካው👇
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
