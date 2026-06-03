@@ -191,3 +191,20 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
+// 1. መጀመሪያ የሪአክት dist ፎልደርን ለኤክስፕረስ አስተዋውቅ (ይህ መኖሩን አረጋግጥ)
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// 2. ከዚያ ሁሉንም ገጾች ወደ index.html የሚመራውን ኮድ መልሰህ አስገባ (ቅድም የጠፋው ኮድ)
+app.use((req, res, next) => {
+  // የ API ጥያቄዎችን እንዳያስተጓጉል ለመከላከል
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+// 3. በመጨረሻም ሰርቨሩን የሚያስነሳው ኮድ ይቀመጥ
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT}`);
+});
