@@ -19,7 +19,7 @@ app.use(cors({
     origin: [
         'http://localhost:5173', 
         'http://localhost:3000',
-        'https://clinic-backend-qi86.onrender.com' 
+        'https://dr-getaneh-specialty-dental-clinic.onrender.com' 
     ],
     credentials: true
 }));
@@ -32,9 +32,12 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// 📦 Strong Absolute Static routing to safely serve web assets to your React layout
+// 📦 Strong Absolute Static routing to safely serve web assets
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
+// 📦 የሪአክት ቪት (Vite) ቢልድ ፋይሎችን ማስተዋወቂያ ኮድ (React Production Build Assets)
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // ⚙️ Multer Web Upload Storage Engine Setup
 const storage = multer.diskStorage({
@@ -106,7 +109,7 @@ app.get('/api/patients', async (req, res) => {
     }
 });
 
-// 🌐 📥 ኒው ዌብሳይት ፎርም ቀጠሮ መያዣ API (Direct Website Booking Form Endpoint)
+// 🌐 📥 ኒው ዌብሳይት ፎርም ቀጠሮ መያዣ API
 app.post('/api/web-book', upload.single('mediaFile'), async (req, res) => {
     try {
         const { fullName, age, gender, country, phoneNumber, reason, appointmentDate, appointmentTime } = req.body;
@@ -140,7 +143,6 @@ app.post('/api/web-book', upload.single('mediaFile'), async (req, res) => {
             else mediaType = 'document';
         }
 
-        // ✅ FIXED: አፃፃፉ እና የተላኩት ፓራሜትሮች ቁጥር እኩል (13 ለ 13) ተደርጓል
         const insertQuery = `
             INSERT INTO patients 
             (full_name, age, gender, country, phone_number, reason, appointment_date, appointment_time, ticket_id, reminder_sent, media_file_id, media_type, chat_id, raw_display_time) 
@@ -185,26 +187,17 @@ app.delete('/api/patients/:id', async (req, res) => {
         res.status(500).json({ success: false, message: 'የመረጃ መሰረዝ ሂደቱ አልተሳካም። (Internal Server Database Error.)' });
     }
 });
-// በፋይሉ መጨረሻ አካባቢ ይህንን ፈልግና በዚህ ተካው፦
-const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-// 1. መጀመሪያ የሪአክት dist ፎልደርን ለኤክስፕረስ አስተዋውቅ (ይህ መኖሩን አረጋግጥ)
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// 2. ከዚያ ሁሉንም ገጾች ወደ index.html የሚመራውን ኮድ መልሰህ አስገባ (ቅድም የጠፋው ኮድ)
+// 🔄 3. ሁሉንም ገጾች ወደ ሪአክት index.html የሚመራው Fallback Middleware (ከ APIዎች በታች መሆን አለበት)
 app.use((req, res, next) => {
-  // የ API ጥያቄዎችን እንዳያስተጓጉል ለመከላከል
   if (req.path.startsWith('/api')) {
     return next();
   }
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// 3. በመጨረሻም ሰርቨሩን የሚያስነሳው ኮድ ይቀመጥ
-const PORT = process.env.PORT || 5000;
+// 🚀 4. ሰርቨሩን በይፋ ማስነሻ ኮድ (እጅግ መጨረሻ ላይ መሆን አለበት)
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running perfectly on port ${PORT}`);
 });
