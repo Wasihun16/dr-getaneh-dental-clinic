@@ -186,6 +186,7 @@ app.delete('/api/patients/:id', async (req, res) => {
     }
 });
 
-app.get('(.*)', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-  });
+// ከሁሉም የኤፒአይ (API) ራውቶችህ በታች (በፋይሉ መጨረሻ አካባቢ) ይህንን ብቻ ጻፍ፦
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
