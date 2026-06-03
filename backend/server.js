@@ -186,10 +186,6 @@ app.delete('/api/patients/:id', async (req, res) => {
     }
 });
 
-// የሪአክት ቢልድ ፋይሎችን ለማንበብ (ይህን መስመር ፈልገህ አስተካክለው)
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// ከሁሉም ራውቶች በታች (Catch-all route) የሚገኘውን ኮድ ደግሞ በዚህ ተካው👇
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
+app.get('(.*)', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  });
