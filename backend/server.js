@@ -185,8 +185,9 @@ app.delete('/api/patients/:id', async (req, res) => {
         res.status(500).json({ success: false, message: 'የመረጃ መሰረዝ ሂደቱ አልተሳካም። (Internal Server Database Error.)' });
     }
 });
+// በፋይሉ መጨረሻ አካባቢ ይህንን ፈልግና በዚህ ተካው፦
+const PORT = process.env.PORT || 5000;
 
-// ከሁሉም የኤፒአይ (API) ራውቶችህ በታች (በፋይሉ መጨረሻ አካባቢ) ይህንን ብቻ ጻፍ፦
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT}`);
 });
