@@ -7,7 +7,6 @@ require('dotenv').config();
 const db = require('./config/db'); 
 
 // 🔗 1. የቦት እና የማስታወሻ ፋይሎችን መጥራት (የተስተካከለ 🔒)
-// በኮምፒውተርህ ላይ ፋይሉ ገና ሲከፈት 409 ስህተት እንዳይመጣ እዚህ ጋ dynamic ተደርጓል
 let bot = null;
 let startReminderService = null;
 
@@ -58,7 +57,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // 🔔 2. የማስታወሻ ሲስተሙን ማስነሳት
-// በኮምፒውተርህ ላይ ስትሰራ የቴሌግራም 409 ግጭት እንዳይፈጥር Render ላይ ብቻ እንዲነሳ ተደርጓል
 if (bot && startReminderService) {
     startReminderService(bot);
     console.log('🔔 የማስታወሻ ሲስተም (Telegram-Only Reminder) በ Render ላይ በጀርባ መሥራት ጀምሯል...');
@@ -172,6 +170,46 @@ app.post('/api/web-book', upload.single('mediaFile'), async (req, res) => {
     } catch (error) {
         console.error('❌ Web booking route system execution failure:', error);
         res.status(500).json({ success: false, message: 'Server database error. Please try again.' });
+    }
+});
+
+// 🔐 NEW: ነባር ታካሚዎች በስልክ ቁጥራቸው ብቻ መግቢያ API (Patient Login Route)
+app.post('/api/patient-login', async (req, res) => {
+    try {
+        const { phoneNumber } = req.body;
+
+        if (!phoneNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'እባክዎ መጀመሪያ የስልክ ቁጥር ያስገቡ! (Phone number is required.)'
+            });
+        }
+
+        const cleanPhone = String(phoneNumber).trim();
+
+        // 🔍 በስልክ ቁጥሩ ቀድሞ የተመዘገበ ታካሚ መኖሩን በዳታቤዝ ውስጥ መፈለግ
+        const [rows] = await db.query(
+            'SELECT * FROM patients WHERE TRIM(phone_number) = ? ORDER BY id DESC LIMIT 1', 
+            [cleanPhone]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'ይህ ስልክ ቁጥር በሲስተሙ ላይ አልተገኘም። እባክዎ መጀመሪያ "ቀጠሮ መያዣ" ፎርሙን በመሙላት ይመዝገቡ!'
+            });
+        }
+
+        console.log(`🔐 Patient Logged In: ${rows[0].full_name} (${cleanPhone})`);
+        res.status(200).json({
+            success: true,
+            message: 'በተሳካ ሁኔታ ገብተዋል! (Login successful)',
+            patient: rows[0]
+        });
+
+    } catch (error) {
+        console.error('❌ Patient login API system error:', error.message);
+        res.status(500).json({ success: false, message: 'የሰርቨር ችግር አጋጥሟል። እባክዎ ጥቂት ቆይተው ደግመው ይሞክሩ።' });
     }
 });
 

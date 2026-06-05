@@ -25,15 +25,17 @@ import drMahletImg from "./assets/mahlet.jpg";
 
 const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? "http://localhost:3000"
-  : "https://clinic-backend-qi86.onrender.com";
+  : "https://dr-getaneh-specialty-dental-clinic.onrender.com"; // የባክኤንድ ዩአርኤል ከሰርቨር ጋር ተስተካክሏል 🚀
 
 function App() {
   // 🔐 AUTHENTICATION & VIEW STATES
   const [view, setView] = useState("public"); // "public", "login_page", "dashboard"
   const [loginType, setLoginType] = useState("Patient"); 
-  const [userRole, setUserRole] = useState("User"); // "User", "Receptionist", "Admin"
+  const [userRole, setUserRole] = useState("User"); // "User", "PatientUser", "Receptionist", "Admin"
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginPhone, setLoginPhone] = useState(""); // 🔐 ኒው፡ የታካሚ ስልክ ቁጥር መያዣ ስቴት
   const [loginError, setLoginError] = useState("");
+  const [loggedInPatient, setLoggedInPatient] = useState(null); // 🔐 ኒው፡ የገባው ታካሚ መረጃ መያዣ
 
   // 📊 DATA & UI MANAGEMENT STATES
   const [patients, setPatients] = useState([]);
@@ -63,19 +65,43 @@ function App() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookedSlots, setBookedSlots] = useState([]);
 
-  // 🔑 UNIFIED LOGIN SUBMIT LOGIC
-  const handleLoginSubmit = (e) => {
+  // 🔑 UNIFIED LOGIN SUBMIT LOGIC (With passwordless customer handling 🚀)
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
 
     if (loginType === "Patient") {
-      setUserRole("User");
-      setView("public");
-      setActiveTab("book-now");
-      setTimeout(() => {
-        document.getElementById("book-now")?.scrollIntoView({ behavior: 'smooth' });
-      }, 150);
+      // 🏥 የታካሚ መግቢያ አመክንዮ (Passwordless Phone Number Verification)
+      if (!loginPhone) {
+        setLoginError("እባክዎ የስልክ ቁጥርዎን ያስገቡ! / Please enter phone number.");
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/patient-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: loginPhone })
+        });
+        
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setLoggedInPatient(data.patient); // የታካሚውን መረጃ በፍሮንትኤንድ ሴቭ ያደርጋል
+          setUserRole("PatientUser");
+          setView("dashboard"); // ወደ ራሱ ዳሽቦርድ ይመራዋል
+          setActiveTab("my-appointment");
+          alert(`እንኳን ደህና መጡ ${data.patient.full_name}!`);
+          setLoginPhone("");
+        } else {
+          setLoginError(data.message || "ይህ ስልክ ቁጥር አልተገኘም።");
+        }
+      } catch (err) {
+        setLoginError("ከሰርቨር ጋር መገናኘት አልተቻለም። እባክዎ ትንሽ ቆይተው ይሞክሩ።");
+      }
+
     } else {
+      // 🛠️ የሰራተኞች (Staff) መግቢያ አመክንዮ
       if (loginPassword === "admin123") {
         setUserRole("Admin");
         setView("dashboard");
@@ -99,6 +125,8 @@ function App() {
     setActiveTab("home");
     setLoginType("Patient");
     setLoginPassword("");
+    setLoginPhone("");
+    setLoggedInPatient(null);
   };
 
   const fetchPatients = async () => {
@@ -308,7 +336,7 @@ function App() {
   return (
     <div className="app-container">
       
-   {/* 📅 CLINIC WORKING HOURS TOP BAR (Updated 🚀) */}
+      {/* 📅 CLINIC WORKING HOURS TOP BAR */}
       {view === "public" && (
         <div className="emergency-top-bar">
           <div className="top-bar-content">
@@ -369,7 +397,7 @@ function App() {
 
           {view === "dashboard" && (
             <button type="button" className="admin-toggle-btn logout-theme" onClick={handleLogout} style={{ backgroundColor: '#ef4444', color: 'white', border: 'none' }}>
-              <LogOut size={15} /> <span>ውጣ (Logout) [{userRole}]</span>
+              <LogOut size={15} /> <span>ውጣ (Logout) [{userRole === "PatientUser" ? "Patient" : userRole}]</span>
             </button>
           )}
         </div>
@@ -394,24 +422,227 @@ function App() {
                 </select>
               </div>
 
-              {loginType === "Staff" && (
+              {loginType === "Patient" ? (
+                <div className="form-group animate-fade-in" style={{ marginBottom: '20px' }}>
+                  <label style={{ fontWeight: '600', display: 'block', marginBottom: '8px', color: '#334155' }}>የስልክ ቁጥርዎ (Your Phone Number)</label>
+                  <input 
+                    type="tel" 
+                    placeholder="e.g. 0912345678" 
+                    value={loginPhone} 
+                    onChange={(e) => setLoginPhone(e.target.value)} 
+                    style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem' }} 
+                    required 
+                  />
+                  <p style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '6px', lineHeight: '1.4' }}>
+                    💡 ቀደም ሲል ቀጠሮ ይዘው ከሆነ አካውንት መክፈት ሳያስፈልግዎ በስልክ ቁጥርዎ ብቻ ይግቡ። <br />
+                    <span style={{ display: 'block', marginTop: '4px', fontStyle: 'italic' }}>
+                      (If you have a previous appointment, simply log in using your phone number without creating an account.)
+                    </span>
+                  </p>
+                </div>
+              ) : (
                 <div className="form-group animate-fade-in" style={{ marginBottom: '20px' }}>
                   <label style={{ fontWeight: '600', display: 'block', marginBottom: '8px', color: '#334155' }}>የሰራተኛ የይለፍ ቃል (Staff Password)</label>
-                  <input type="password" placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem' }} required />
+                  <input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={loginPassword} 
+                    onChange={(e) => setLoginPassword(e.target.value)} 
+                    style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '1rem' }} 
+                    required 
+                  />
                 </div>
               )}
 
               {loginError && <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '15px', fontWeight: 'bold' }}>{loginError}</p>}
 
               <button type="submit" className="submit-booking-btn" style={{ width: '100%', padding: '12px', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', backgroundColor: '#2563eb', color: 'white' }}>
-                <LogIn size={16} /> ቀጥል (Proceed)
+                <LogIn size={16} /> ግባ (Login)
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* 🌐 VIEW 2: PATIENT WEBSITE PUBLIC PORTAL */}
+      {/* 📊 VIEW 2: DASHBOARDS (Strict Separation Fix Applied Here 🚀) */}
+      {view === "dashboard" && (
+        <div className="dashboard-wrapper" style={{ padding: '40px 5%' }}>
+          
+          {userRole === "PatientUser" && loggedInPatient ? (
+            /* 🏥 1. PATIENT DASHBOARD ONLY */
+            <div className="patient-portal-card" style={{ background: 'white', padding: '35px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+              <div style={{ borderBottom: '2px solid #f1f5f9', paddingBottom: '20px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <User size={32} color="#2563eb" />
+                <div>
+                  <h2 style={{ color: '#1e3a8a', margin: 0 }}>ሰላም፣ {loggedInPatient.full_name}</h2>
+                  <p style={{ color: '#64748b', margin: '4px 0 0 0', fontSize: '0.9rem' }}>የእርስዎ የጥርስ ህክምና ቀጠሮ መረጃ መከታተያ ገጽ</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginTop: '25px' }}>
+                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #2563eb' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>የቀጠሮ መለያ ቁጥር (Ticket ID)</span>
+                  <strong style={{ fontSize: '1.2rem', color: '#0f172a' }}>{loggedInPatient.ticket_id || `DG-W${loggedInPatient.id}`}</strong>
+                </div>
+                
+                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>የቀጠሮ ቀን (Appointment Date)</span>
+                  <strong style={{ fontSize: '1.2rem', color: '#0f172a' }}>{loggedInPatient.appointment_date}</strong>
+                </div>
+
+                <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #f59e0b' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.85rem', display: 'block', marginBottom: '5px' }}>የቀጠሮ ሰዓት (Appointment Time)</span>
+                  <strong style={{ fontSize: '1.2rem', color: '#0f172a' }}>{loggedInPatient.appointment_time}</strong>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '30px', background: '#eff6ff', padding: '20px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                <h4 style={{ color: '#1e40af', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle size={18} /> ጠቃሚ መረጃ ለታካሚዎች
+                </h4>
+                <p style={{ color: '#1e3a8a', fontSize: '0.9rem', lineHeight: '1.5', margin: 0 }}>
+                  እባክዎ ከተያዘልዎት ሰዓት **ከ15 ደቂቃ በፊት** በክሊኒካችን (5 ኪሎ ማርቆስ ህንፃ ላይ) በመገኘት ለሪሴፕሽኑ የእርስዎን ቲኬት ቁጥር ያሳዩ። ቀጠሮ ለመቀየር ወይም ለመሰረዝ ከፈለጉ በስልክ ቁጥራችን +251 930 64 14 83 ይደውሉልን። ጤናዎ ኩራታችን ነው!
+                </p>
+              </div>
+            </div>
+          ) : (userRole === "Admin" || userRole === "Receptionist") ? (
+            /* 🛠️ 2. ADMIN/STAFF DASHBOARD ONLY */
+            <div className="admin-portal-main animate-fade-in">
+              <header className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #e2e8f0', paddingBottom: '15px' }}>
+                <div>
+                  <h2 style={{ color: '#1e3a8a', fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <LayoutDashboard /> የቁጥጥር ሰሌዳ (Control Dashboard)
+                  </h2>
+                  <p style={{ color: '#64748b' }}>የክሊኒኩ ታካሚዎች የቀጠሮ መረጃዎች ማስተዳደሪያ</p>
+                </div>
+                <button onClick={exportToCSV} className="action-btn csv-download" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                  <Download size={16} /> ኤክስፖርት (Export CSV)
+                </button>
+              </header>
+
+              <section className="metrics-container">
+                <div className="metric-card blue">
+                  <div className="card-info"><h3>{patients.length}</h3><p>ጠቅላላ ታካሚዎች (Total Patients)</p></div>
+                  <Users size={32} className="card-icon" />
+                </div>
+                <div className="metric-card orange">
+                  <div className="card-info"><h3>{patients.filter(p => p.reminder_sent === 0).length}</h3><p>በመጠባበቅ ላይ (Pending Appointments)</p></div>
+                  <Clock size={32} className="card-icon" />
+                </div>
+                <div className="metric-card green">
+                  <div className="card-info"><h3>{patients.filter(p => p.reminder_sent === 1).length}</h3><p>ማስታወሻ የተላከላቸው (Reminded)</p></div>
+                  <CheckCircle size={32} className="card-icon" />
+                </div>
+              </section>
+
+              {selectedPatientIds.length > 0 && (
+                <div className="bulk-actions-context-banner animate-fade-in">
+                  <div className="banner-left">
+                    <CheckSquare size={18} className="banner-icon" />
+                    <span>📌 <strong>{selectedPatientIds.length}</strong> መረጃዎች ተመርጠዋል (Selected)</span>
+                  </div>
+                  <button onClick={handleBulkDelete} className="bulk-delete-execute-btn">
+                    <Trash2 size={15} /> የተመረጡትን ሰርዝ (Delete Selected)
+                  </button>
+                </div>
+              )}
+
+              <div className="search-bar-container">
+                <div className="search-input-wrapper">
+                  <Search size={18} className="search-icon" />
+                  <input 
+                    type="text" 
+                    placeholder="በስም፣ በስልክ ወይም በመለያ ይፈልጉ... (Search by name, phone, ticket...)" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <button onClick={fetchPatients} className="action-btn refresh">
+                  <RefreshCw size={16} /> ዳታ አመሳስል (Sync)
+                </button>
+              </div>
+
+              <main className="table-container">
+                {loading && <div className="status-indicator">🔄 መረጃ በመፈለግ ላይ... (Loading...)</div>}
+                {error && <div className="status-indicator error">❌ ስህተት (Error): {error}</div>}
+
+                {!loading && !error && (
+                  <table className="dashboard-table">
+                    <thead>
+                      <tr>
+                        <th className="checkbox-column-width">
+                          <button type="button" onClick={handleSelectAllRows} className="custom-checkbox-header-btn" title="ሁሉንም ምረጥ (Select All)">
+                            {selectedPatientIds.length === filteredPatients.length && filteredPatients.length > 0 ? (
+                              <CheckSquare size={18} className="checkbox-icon checked" />
+                            ) : (
+                              <Square size={18} className="checkbox-icon" />
+                            )}
+                          </button>
+                        </th>
+                        <th>መለያ (Ticket ID)</th>
+                        <th>ሙሉ ስም (Full Name)</th>
+                        <th>ዕድሜ / ጾታ (Age/Sex)</th>
+                        <th>ስልክ ቁጥር (Phone)</th>
+                        <th>ምክንያት (Reason)</th>
+                        <th>የቀጠሮ ጊዜ (Schedule)</th>
+                        <th>ፋይል (Media)</th>
+                        <th>ድርጊት (Action)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPatients.length === 0 ? (
+                        <tr><td colSpan="9" className="empty-row">ምንም የገባ የታካሚ መረጃ አልተገኘም / No Patient Records Found</td></tr>
+                      ) : (
+                        filteredPatients.map((patient) => {
+                          const isChecked = selectedPatientIds.includes(patient.id);
+                          const finalFileUrl = renderMediaLink(patient.media_file_id);
+                          return (
+                            <tr key={patient.id} className={isChecked ? 'selected-row-highlight' : ''}>
+                              <td>
+                                <button type="button" onClick={() => handleSelectRow(patient.id)} className="custom-checkbox-row-btn">
+                                  {isChecked ? <CheckSquare size={18} className="checkbox-icon checked" /> : <Square size={18} className="checkbox-icon" />}
+                                </button>
+                              </td>
+                              <td><span className="ticket-badge">{patient.ticket_id || `DG-${patient.id}`}</span></td>
+                              <td className="patient-name-cell"><User size={13} className="inline-icon" /> {patient.full_name}</td>
+                              <td>{patient.age ? `${patient.age} (${patient.gender})` : '-'}</td>
+                              <td>{patient.phone_number || 'No Phone'}</td>
+                              <td><span className="reason-text">{patient.reason || 'General Checkup'}</span></td>
+                              <td>
+                                <div className="time-badge"><Calendar size={12} /> <span>{patient.appointment_date}</span></div>
+                                <div className="time-badge secondary"><Clock size={12} /> <span>{patient.appointment_time || 'Not Fixed'}</span></div>
+                              </td>
+                              <td>
+                                {finalFileUrl ? (
+                                  <a href={finalFileUrl} target="_blank" rel="noreferrer" className="view-media-btn">📁 ክፈት (Open) <ExternalLink size={10} /></a>
+                                ) : (
+                                  <span className="no-media">የለም (None)</span>
+                                )}
+                              </td>
+                              <td>
+                                <button 
+                                  onClick={() => deletePatientRecord(patient.id)}
+                                  className="admin-delete-action-btn"
+                                  style={{ opacity: userRole === 'Admin' ? 1 : 0.4, cursor: userRole === 'Admin' ? 'pointer' : 'not-allowed' }}
+                                  title={userRole !== 'Admin' ? "የአስተዳዳሪ መብት ብቻ ያስፈልጋል (Admin Access Required)" : "Delete Record"}
+                                >
+                                  <Trash2 size={13} /> ሰርዝ (Delete)
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </main>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* 🌐 VIEW 3: PATIENT WEBSITE PUBLIC PORTAL */}
       {view === "public" && (
         <div className="public-website animate-fade-in">
           
@@ -498,7 +729,6 @@ function App() {
               <h2>ለምን እኛን ይመርጣሉ?</h2>
               <p className="section-subtitle-en">Why Choose Us? / Why Patients Trust Our Specialty Clinic</p>
             </div>
-            
             <div className="features-grid">
               <div className="feature-grid-card">
                 <div className="feature-icon-box"><Stethoscope size={24} /></div>
@@ -755,7 +985,7 @@ function App() {
                         <input type="date" name="appointmentDate" value={formData.appointmentDate} required onChange={handleFormChange} />
                       </div>
                     </div>
-
+                    
                     {/* ⏰ TIME-SLOT INTUITION MATRIX CONTAINER */}
                     {formData.appointmentDate && (
                       <div className="time-slot-selection-wrapper" style={{ marginTop: '15px', marginBottom: '15px' }}>
@@ -925,155 +1155,11 @@ function App() {
             </div> 
 
             <div className="footer-bottom-bar">
-              <p>© {new Date().getFullYear()} Dr. Getaneh Specialty Dental Clinic. All Rights Reserved.</p>
+              <p>© {new Date().getFullYear()} Dr. Getaneh Specialty Dental Clinic. All Rights Reserved. ዶ/ር ጌታነህ ልዩ የጥርስ ሕክምና ክሊኒክ | መብቱ በሙሉ የተጠበቀ ነው።</p>
             </div>
           </footer>
         </div>
       )}
-
-      {/* ==========================================================================
-         📊 VIEW 3: ADMIN / RECEPTIONIST SECURED CONTROL DASHBOARD
-         ========================================================================== */}
-      {view === "dashboard" && (
-        <div className="admin-dashboard-wrapper animate-fade-in" style={{ padding: '40px 5%' }}>
-          
-          <header className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #e2e8f0', paddingBottom: '15px' }}>
-            <div>
-              <h2 style={{ color: '#1e3a8a', fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <LayoutDashboard /> የቁጥጥር ሰሌዳ (Control Dashboard)
-              </h2>
-              <p style={{ color: '#64748b' }}>የክሊኒኩ ታካሚዎች የቀጠሮ መረጃዎች ማስተዳደሪያ</p>
-            </div>
-            <button onClick={exportToCSV} className="action-btn csv-download" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-              <Download size={16} /> ኤክስፖርት (Export CSV)
-            </button>
-          </header>
-
-          <section className="metrics-container">
-            <div className="metric-card blue">
-              <div className="card-info"><h3>{patients.length}</h3><p>ጠቅላላ ታካሚዎች (Total Patients)</p></div>
-              <Users size={32} className="card-icon" />
-            </div>
-            <div className="metric-card orange">
-              <div className="card-info"><h3>{patients.filter(p => p.reminder_sent === 0).length}</h3><p>በመጠባበቅ ላይ (Pending Appointments)</p></div>
-              <Clock size={32} className="card-icon" />
-            </div>
-            <div className="metric-card green">
-              <div className="card-info"><h3>{patients.filter(p => p.reminder_sent === 1).length}</h3><p>ማስታወሻ የተላከላቸው (Reminded)</p></div>
-              <CheckCircle size={32} className="card-icon" />
-            </div>
-          </section>
-
-          {selectedPatientIds.length > 0 && (
-            <div className="bulk-actions-context-banner animate-fade-in">
-              <div className="banner-left">
-                <CheckSquare size={18} className="banner-icon" />
-                <span>📌 <strong>{selectedPatientIds.length}</strong> መረጃዎች ተመርጠዋል (Selected)</span>
-              </div>
-              <button onClick={handleBulkDelete} className="bulk-delete-execute-btn">
-                <Trash2 size={15} /> የተመረጡትን ሰርዝ (Delete Selected)
-              </button>
-            </div>
-          )}
-
-          <div className="search-bar-container">
-            <div className="search-input-wrapper">
-              <Search size={18} className="search-icon" />
-              <input 
-                type="text" 
-                placeholder="በስም፣ በስልክ ወይም በመለያ ይፈልጉ... (Search by name, phone, ticket...)" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button onClick={fetchPatients} className="action-btn refresh">
-              <RefreshCw size={16} /> ዳታ አመሳስል (Sync)
-            </button>
-          </div>
-
-          <main className="table-container">
-            {loading && <div className="status-indicator">🔄 መረጃ በመፈለግ ላይ... (Loading...)</div>}
-            {error && <div className="status-indicator error">❌ ስህተት (Error): {error}</div>}
-
-            {!loading && !error && (
-              <table className="dashboard-table">
-                <thead>
-                  <tr>
-                    <th className="checkbox-column-width">
-                      <button 
-                        type="button" 
-                        onClick={handleSelectAllRows} 
-                        className="custom-checkbox-header-btn"
-                        title="ሁሉንም ምረጥ (Select All)"
-                      >
-                        {selectedPatientIds.length === filteredPatients.length && filteredPatients.length > 0 ? (
-                          <CheckSquare size={18} className="checkbox-icon checked" />
-                        ) : (
-                          <Square size={18} className="checkbox-icon" />
-                        )}
-                      </button>
-                    </th>
-                    <th>መለያ (Ticket ID)</th>
-                    <th>ሙሉ ስም (Full Name)</th>
-                    <th>ዕድሜ / ጾታ (Age/Sex)</th>
-                    <th>ስልክ ቁጥር (Phone)</th>
-                    <th>ምክንያት (Reason)</th>
-                    <th>የቀጠሮ ጊዜ (Schedule)</th>
-                    <th>ፋይል (Media)</th>
-                    <th>ድርጊት (Action)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPatients.length === 0 ? (
-                    <tr><td colSpan="9" className="empty-row">ምንም የገባ የታካሚ መረጃ አልተገኘም / No Patient Records Found</td></tr>
-                  ) : (
-                    filteredPatients.map((patient) => {
-                      const isChecked = selectedPatientIds.includes(patient.id);
-                      const finalFileUrl = renderMediaLink(patient.media_file_id);
-                      return (
-                        <tr key={patient.id} className={isChecked ? 'selected-row-highlight' : ''}>
-                          <td>
-                            <button type="button" onClick={() => handleSelectRow(patient.id)} className="custom-checkbox-row-btn">
-                              {isChecked ? <CheckSquare size={18} className="checkbox-icon checked" /> : <Square size={18} className="checkbox-icon" />}
-                            </button>
-                          </td>
-                          <td><span className="ticket-badge">{patient.ticket_id || `DG-${patient.id}`}</span></td>
-                          <td className="patient-name-cell"><User size={13} className="inline-icon" /> {patient.full_name}</td>
-                          <td>{patient.age ? `${patient.age} (${patient.gender})` : '-'}</td>
-                          <td>{patient.phone_number || 'No Phone'}</td>
-                          <td><span className="reason-text">{patient.reason || 'General Checkup'}</span></td>
-                          <td>
-                            <div className="time-badge"><Calendar size={12} /> <span>{patient.appointment_date}</span></div>
-                            <div className="time-badge secondary"><Clock size={12} /> <span>{patient.appointment_time || 'Not Fixed'}</span></div>
-                          </td>
-                          <td>
-                            {finalFileUrl ? (
-                              <a href={finalFileUrl} target="_blank" rel="noreferrer" className="view-media-btn">📁 ክፈት (Open) <ExternalLink size={10} /></a>
-                            ) : (
-                              <span className="no-media">የለም (None)</span>
-                            )}
-                          </td>
-                          <td>
-                            <button 
-                              onClick={() => deletePatientRecord(patient.id)}
-                              className="admin-delete-action-btn"
-                              style={{ opacity: userRole === 'Admin' ? 1 : 0.4, cursor: userRole === 'Admin' ? 'pointer' : 'not-allowed' }}
-                              title={userRole !== 'Admin' ? "የአስተዳዳሪ መብት ብቻ ያስፈልጋል (Admin Access Required)" : "Delete Record"}
-                            >
-                              <Trash2 size={13} /> ሰርዝ (Delete)
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            )}
-          </main>
-        </div>
-      )}
-
       {/* 🚀 SCROLL TO TOP & FLOATING ACTIONS */}
       {showScrollTop && (
         <button className="scroll-to-top-btn" onClick={scrollToTop} style={{ position: 'fixed', bottom: '20px', right: '20px', background: '#2563eb', border: 'none', borderRadius: '50%', padding: '12px', cursor: 'pointer', zIndex: 999 }}>
