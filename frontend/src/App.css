@@ -181,7 +181,7 @@ body {
 
 /* 🎯 የሎጎው ምስል እራሱ (ቀደም ሲል የነበረው) */
 .brand-logo-img {
-  height: 90px !important;      /* ሎጎው ትልቅ ሆኖ እንዲቀጥል */
+  height: 85px !important;      /* ሎጎው ትልቅ ሆኖ እንዲቀጥል */
   width: auto;
   object-fit: contain;
   margin-left: 0px !important;   /* በምስሉ ዙሪያ ክፍተት እንዳይኖር */
