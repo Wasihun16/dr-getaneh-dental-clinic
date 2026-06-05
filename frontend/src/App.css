@@ -86,9 +86,8 @@ body {
   from { opacity: 0; transform: translateY(10px); } 
   to { opacity: 1; transform: translateY(0); } 
 }
-
 /* ==========================================================================
-   🚨 EMERGENCY TOP BANNER
+   📅 CLINIC WORKING HOURS TOP BANNER (Updated 🚀)
    ========================================================================== */
 .emergency-top-bar {
   background-color: var(--brand-red-hover);
@@ -106,14 +105,34 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
+  flex-wrap: wrap; /* በስልክ ላይ ጽሑፉ ሲበዛ ተስማሚ ሆኖ ወደ ታች እንዲወርድ */
+}
+
+.top-bar-content p {
+  margin: 0;
+  padding: 0;
+}
+
+/* 📞 የስልክ ቁጥሩ ታካሚዎች ሲነኩት በቀጥታ የሚደውልበት የሊንክ ስታይል */
+.top-bar-phone {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+  font-weight: 700 !important;
+  margin-left: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.top-bar-phone:hover {
+  opacity: 0.8; /* ማውሱ ሲያርፍበት ቀለል ይላል */
 }
 
 .pulse-dot {
   width: 10px;
   height: 10px;
-  background-color: white;
+  background-color: #4ade80; /* የቀይ ባሩን ጽሑፍ ለማድመቅ ነጥቧን ወደ አረንጓዴ (Live) ቀይረናታል 🟢 */
   border-radius: 50%;
   animation: pulse 1.5s infinite;
+  flex-shrink: 0;
 }
 
 @keyframes pulse {
@@ -146,12 +165,35 @@ body {
   gap: 15px; 
   cursor: pointer; 
 }
+/* 🌐 የናቭባሩን ዋና መያዣ ክፍተት ማጥፋት */
+.main-navbar {
+  padding-left: 0px !important; /* የናቭባሩን የግራ ክፍተት 0 ያደርጋል */
+}
 
+/* 🏢 የሎጎውን እና የጽሑፉን መያዣ (Brand Container) ወደ ግራ ጥግ ማስጠጋት */
+.nav-brand {
+  padding-left: 0px !important;  /* ❌ የግራውን ክፍተት ፍጹም ያጠፋል */
+  margin-left: 0px !important;   /* ❌ ማናቸውንም ማርጂን ወደ ዜሮ ያወርዳል */
+  display: flex;
+  align-items: center;
+  gap: 12px;                     /* በሎጎውና በጽሑፉ መሃል ብቻ ቆንጆ ክፍተት እንዲኖር */
+}
+
+/* 🎯 የሎጎው ምስል እራሱ (ቀደም ሲል የነበረው) */
 .brand-logo-img {
-  height: 42px;
+  height: 90px !important;      /* ሎጎው ትልቅ ሆኖ እንዲቀጥል */
   width: auto;
   object-fit: contain;
-  border-radius: var(--radius-sm);
+  margin-left: 0px !important;   /* በምስሉ ዙሪያ ክፍተት እንዳይኖር */
+  padding-left: 0px !important;
+  display: block;
+}
+
+/* 📱 በስልክ ላይ ዌብሳይቱ ሲከፈት መጠኑን ማስተካከያ */
+@media (max-width: 768px) {
+  .brand-logo-img {
+    height: 75px !important;
+  }
 }
 
 .nav-brand-text {

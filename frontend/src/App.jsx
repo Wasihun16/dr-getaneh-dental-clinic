@@ -308,12 +308,15 @@ function App() {
   return (
     <div className="app-container">
       
-      {/* 🔴 EMERGENCY TOP BAR */}
+   {/* 📅 CLINIC WORKING HOURS TOP BAR (Updated 🚀) */}
       {view === "public" && (
         <div className="emergency-top-bar">
           <div className="top-bar-content">
             <span className="pulse-dot"></span>
-            <p><strong>አስቸኳይ የጥርስ ህክምና / 24/7 Dental Emergency:</strong> ይደውሉልን (Call Us) +251 930 64 14 83</p>
+            <p>
+              <strong>የስራ ቀናት፦ ከሰኞ - ቅዳሜ (እስከ ማታ 11:30) | Working Hours: Mon - Sat (Until 5:30 PM):</strong> 
+              {" "}ይደውሉልን (Call Us) <a href="tel:+251930641483" className="top-bar-phone">+251 930 64 14 83</a>
+            </p>
           </div>
         </div>
       )}
