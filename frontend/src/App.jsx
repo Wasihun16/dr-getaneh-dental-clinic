@@ -496,14 +496,20 @@ function App() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '30px', background: '#eff6ff', padding: '20px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                <h4 style={{ color: '#1e40af', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle size={18} /> ጠቃሚ መረጃ ለታካሚዎች
-                </h4>
-                <p style={{ color: '#1e3a8a', fontSize: '0.9rem', lineHeight: '1.5', margin: 0 }}>
-                  እባክዎ ከተያዘልዎት ሰዓት **ከ15 ደቂቃ በፊት** በክሊኒካችን (5 ኪሎ ማርቆስ ህንፃ ላይ) በመገኘት ለሪሴፕሽኑ የእርስዎን ቲኬት ቁጥር ያሳዩ። ቀጠሮ ለመቀየር ወይም ለመሰረዝ ከፈለጉ በስልክ ቁጥራችን +251 930 64 14 83 ይደውሉልን። ጤናዎ ኩራታችን ነው!
-                </p>
-              </div>
+          <div style={{ marginTop: '30px', background: '#eff6ff', padding: '20px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+  <h4 style={{ color: '#1e40af', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <CheckCircle size={18} /> ጠቃሚ መረጃ ለታካሚዎች / Important Information
+  </h4>
+  
+  <p style={{ color: '#1e3a8a', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 10px 0', fontWeight: '500' }}>
+    እባክዎ ከተያዘልዎት ሰዓት <strong>ከ15 ደቂቃ በፊት</strong> በክሊኒካችን (5 ኪሎ ማርቆስ ህንፃ ላይ) በመገኘት ለሪሴፕሽኑ የእርስዎን ቲኬት ቁጥር ያሳዩ። ቀጠሮ ለመቀየር ወይም ለመሰረዝ ከፈለጉ በስልክ ቁጥራችን +251 930 64 14 83 ይደውሉልን። ጤናዎ ኩራታችን ነው!
+  </p>
+  
+  <p style={{ color: '#475569', fontSize: '0.9rem', lineHeight: '1.5', margin: 0, fontStyle: 'italic' }}>
+    Please arrive at our clinic (located at 5 Kilo, Markos Building) <strong>15 minutes before</strong> your scheduled time and present your ticket number to the receptionist. If you need to reschedule or cancel your appointment, please call us at +251 930 64 14 83. Your health is our pride!
+  </p>
+</div>
+
             </div>
           ) : (userRole === "Admin" || userRole === "Receptionist") ? (
             /* 🛠️ 2. ADMIN/STAFF DASHBOARD ONLY */
