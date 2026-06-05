@@ -6,9 +6,15 @@ const fs = require('fs');
 require('dotenv').config();
 const db = require('./config/db'); 
 
-// 🔗 1. የቦት እና የማስታወሻ ፋይሎችን እዚህ ጋር መጥራት
-const bot = require('./bot/telegramBot');
-const { startReminderService } = require('./services/reminderService');
+// 🔗 1. የቦት እና የማስታወሻ ፋይሎችን መጥራት (የተስተካከለ 🔒)
+// በኮምፒውተርህ ላይ ፋይሉ ገና ሲከፈት 409 ስህተት እንዳይመጣ እዚህ ጋ dynamic ተደርጓል
+let bot = null;
+let startReminderService = null;
+
+if (process.env.NODE_ENV === 'production') {
+    bot = require('./bot/telegramBot');
+    startReminderService = require('./services/reminderService').startReminderService;
+}
 
 const app = express();
 
@@ -51,13 +57,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 🔔 2. የማስታወሻ ሲስተሙን ማስነሳት (የተስተካከለ 🚀)
+// 🔔 2. የማስታወሻ ሲስተሙን ማስነሳት
 // በኮምፒውተርህ ላይ ስትሰራ የቴሌግራም 409 ግጭት እንዳይፈጥር Render ላይ ብቻ እንዲነሳ ተደርጓል
-if (bot && process.env.NODE_ENV === 'production') {
+if (bot && startReminderService) {
     startReminderService(bot);
     console.log('🔔 የማስታወሻ ሲስተም (Telegram-Only Reminder) በ Render ላይ በጀርባ መሥራት ጀምሯል...');
 } else {
-    console.log('ℹ️ Local Environment ተገኝቷል፦ በኮምፒውተርህ ላይ የቴሌግራም ቦት እንዳይጋጭ ለጊዜው ታግዷል።');
+    console.log('ℹ️ Local Environment ተገኝቷል፦ በኮምፒውተርህ ላይ የቴሌግራም ቦት እንዳይጋጭ ሙሉ በሙሉ ታግዷል።');
 }
 
 // ዳታቤዙ መገናኘቱን መሞከሪያ እና ሰንጠረዥ መፍጠሪያ
