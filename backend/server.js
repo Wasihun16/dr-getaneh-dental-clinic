@@ -51,9 +51,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 🔔 2. የማስታወሻ ሲስተሙን እዚህ ጋር ማስነሳት
-if (bot) {
+// 🔔 2. የማስታወሻ ሲስተሙን ማስነሳት (የተስተካከለ 🚀)
+// በኮምፒውተርህ ላይ ስትሰራ የቴሌግራም 409 ግጭት እንዳይፈጥር Render ላይ ብቻ እንዲነሳ ተደርጓል
+if (bot && process.env.NODE_ENV === 'production') {
     startReminderService(bot);
+    console.log('🔔 የማስታወሻ ሲስተም (Telegram-Only Reminder) በ Render ላይ በጀርባ መሥራት ጀምሯል...');
+} else {
+    console.log('ℹ️ Local Environment ተገኝቷል፦ በኮምፒውተርህ ላይ የቴሌግራም ቦት እንዳይጋጭ ለጊዜው ታግዷል።');
 }
 
 // ዳታቤዙ መገናኘቱን መሞከሪያ እና ሰንጠረዥ መፍጠሪያ
