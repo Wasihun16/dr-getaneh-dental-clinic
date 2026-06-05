@@ -12,7 +12,7 @@ import './App.css';
 import dentalScanImg from "./assets/dental-scan.jpg"; 
 import sergery from "./assets/sergery-ex.jpg";                       
 import modernReception from "./assets/modern-reception.jpg";       
-import clinicLogoexport from "./assets/logo.jpg";
+import clinicLogo from "./assets/logo.jpg";
 import clinicBuildingImg from "./assets/clinic-main.jpg"; 
 
 // 🛡️ 2. PERMANENT SAFETY NET ALIASES 
@@ -321,7 +321,7 @@ function App() {
       {/* 🌐 NAVBAR */}
       <nav className="main-navbar">
         <div className="nav-brand" onClick={() => { navigateToSection("home"); setDropdownOpen(false); }}>
-          <img src={clinicLogoexport} alt="Clinic Logo" className="brand-logo-img" />
+          <img src={clinicLogo} alt="Clinic Logo" className="brand-logo-img" />
           <div className="nav-brand-text">
             <h1>ዶ/ር ጌታነህ የጥርስ ልዩ ህክምና</h1>
             <p>Dr. Getaneh Specialty Dental Clinic</p>
