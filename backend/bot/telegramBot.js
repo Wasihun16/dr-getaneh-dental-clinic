@@ -528,17 +528,14 @@ bot.on('message', async (msg) => {
             const prompt = lang === 'am' ? `📅 እባክዎ የሚመጡበትን ወር ይምረጡ 👇` : `📅 Please select your preferred Month 👇`;
             bot.sendMessage(chatId, prompt, { reply_markup: { inline_keyboard: monthButtons } }).catch(e => console.log(e.message));
         }).catch(e => console.log(e.message));
-    }
-else if (currentState === 'WAITING_FOR_TIME') {
+    }else if (currentState === 'WAITING_FOR_TIME') {
         let timeInput = text.trim().toLowerCase();
         
-        // 🚀 AUTO-SANITIZE EDGE CASE (ምስል 4 ላይ ላጋጠመው ስህተት መፍትሄ)
-        // ተጠቃሚው የ24-ሰዓት አቆጣጠር (ለምሳሌ ከ12 ሰዓት በላይ የሆኑትን 14:30፣ 23:06) ጽፎ AM/PM ወይም የአማርኛ ማሻሻያዎችን ከቀላቀለ በራሱ ያጠፋቸዋል
+        // 🚀 AUTO-SANITIZE REDUNDANT 24H + AM/PM FORMATS
         const match24h = timeInput.match(/^(\d{1,2}):(\d{2})/);
         if (match24h) {
             const hr = parseInt(match24h[1]);
             if (hr >= 12) {
-                // ሰዓቱ ከ12 በላይ ከሆነ am/pm ወይም የአማርኛ ማሻሻያዎችን ያስወግዳል
                 timeInput = timeInput.replace(/(am|pm|ጠዋት|ከሰዓት|ማታ|ምሽት|ሌሊት)/g, '').trim();
             }
         }
@@ -553,8 +550,7 @@ else if (currentState === 'WAITING_FOR_TIME') {
             return bot.sendMessage(chatId, errorMsg);
         }
 
-        // 🛑 1. NIGHT / CLOSED HOURS CHECK 🌙
-        // ክሊኒኩ ከ 8:30 AM (510 min) እስከ 6:30 PM (1110 min) የሚሰራበት ጊዜ
+        // 🛑 1. NIGHT / CLOSED HOURS CHECK 🌙 (8:30 AM - 6:30 PM)
         if (totalMinutes < 510 || totalMinutes > 1110) { 
             const closedMsg = lang === 'am' 
                 ? `🌙 ይቅርታ፣ ክሊኒኩ በዚህ ሰዓት ዝግ ነው።\n\n🕒 *የስራ ሰዓት፡* ከጠዋቱ 2:30 እስከ ምሽቱ 12:30 (8:30 AM - 6:30 PM) ብቻ ነው።\nእባክዎ በስራ ሰዓት ውስጥ ያለ ሰዓት ያስገቡ 👇`
@@ -562,31 +558,45 @@ else if (currentState === 'WAITING_FOR_TIME') {
             return bot.sendMessage(chatId, closedMsg, { parse_mode: 'Markdown' });
         }
 
-        // 🛑 2. PAST TIME TODAY CHECK ⏳ (ቀጠሮው ለዛሬ ከሆነ ብቻ ነው የሚመረምረው)
+        // 🚀 DYNAMIC BULLETPROOF "IS TODAY" CHECK
+        // የተመረጠው ቀን ዛሬ መሆኑን ከታች ባለው ቀመር ራሱ ያረጋግጣል (በስቴት ቫሪያብል ላይ አይመሰረትም)
         const now = new Date();
-        const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
-        const currentTotalMinutes = (eatNow.getUTCHours() * 60) + eatNow.getUTCMinutes();
+        const amharicDateStr = new Intl.DateTimeFormat('am-ET', { timeZone: "Africa/Addis_Ababa", calendar: 'ethiopic', month: 'long', day: 'numeric' }).format(now);
+        const englishDateStr = now.toLocaleDateString('en-US', { timeZone: "Africa/Addis_Ababa", month: 'long', day: 'numeric' });
+        const currentYearAm = "2018 ዓ.ም"; 
+        const currentYearEn = "2026";
+        
+        const todayAmComma = `${amharicDateStr}፣ ${currentYearAm}`.replace(/\s+/g, ' ').trim();
+        const todayAmSemicolon = `${amharicDateStr}፤ ${currentYearAm}`.replace(/\s+/g, ' ').trim();
+        const todayEnFull = `${englishDateStr}, ${currentYearEn}`.replace(/\s+/g, ' ').trim();
 
-        if (userStates[chatId].isToday && totalMinutes <= currentTotalMinutes) {
-            let curHour = eatNow.getUTCHours();
-            let curMin = eatNow.getUTCMinutes();
-            let ampm = curHour >= 12 ? 'PM' : 'AM';
-            curHour = curHour % 12 || 12;
-            const curTimeStr = `${curHour}:${curMin < 10 ? '0'+curMin : curMin} ${ampm}`;
+        const selectedDate = String(userStates[chatId].appointmentDate).trim();
+        const isActuallyToday = (selectedDate === todayAmComma || selectedDate === todayAmSemicolon || selectedDate === todayEnFull);
 
-            const pastMsg = lang === 'am'
-                ? `⏳ ይቅርታ፣ ያስገቡት ሰዓት አልፏል! አሁን ሰዓቱ ${curTimeStr} ነው።\nእባክዎ ወደፊት ያለ ሰዓት ያስገቡ 👇`
-                : `⏳ Sorry, this time has already passed! Current local time is ${curTimeStr}.\nPlease enter a valid future time 👇`;
-            return bot.sendMessage(chatId, pastMsg);
+        // 🛑 2. PAST TIME TODAY CHECK ⏳ (ቀጠሮው ለዛሬ ከሆነ ብቻ ነው የሚመረምረው)
+        if (isActuallyToday) {
+            const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+            const currentTotalMinutes = (eatNow.getUTCHours() * 60) + eatNow.getUTCMinutes();
+
+            if (totalMinutes <= currentTotalMinutes) {
+                let curHour = eatNow.getUTCHours();
+                let curMin = eatNow.getUTCMinutes();
+                let ampm = curHour >= 12 ? 'PM' : 'AM';
+                curHour = curHour % 12 || 12;
+                const curTimeStr = `${curHour}:${curMin < 10 ? '0'+curMin : curMin} ${ampm}`;
+
+                const pastMsg = lang === 'am'
+                    ? `⏳ ይቅርታ፣ ያስገቡት ሰዓት አልፏል! አሁን ሰዓቱ ${curTimeStr} ነው።\nእባክዎ ወደፊት ያለ ሰዓት ያስገቡ 👇`
+                    : `⏳ Sorry, this time has already passed! Current local time is ${curTimeStr}.\nPlease enter a valid future time 👇`;
+                return bot.sendMessage(chatId, pastMsg);
+            }
         }
 
         // 🛑 3. DOUBLE-BOOKING CONFLICT CHECK ❌
-        const selectedDate = userStates[chatId].appointmentDate;
-
         try {
             const [conflictSlots] = await db.query(
                 'SELECT id FROM patients WHERE TRIM(appointment_date) = ? AND TRIM(appointment_time) = ? AND reminder_sent != 2',
-                [String(selectedDate).trim(), String(standardTime).trim()]
+                [selectedDate, String(standardTime).trim()]
             );
 
             if (conflictSlots && conflictSlots.length > 0) {
@@ -601,7 +611,7 @@ else if (currentState === 'WAITING_FOR_TIME') {
         }
 
         userStates[chatId].appointmentTime = standardTime; 
-        userStates[chatId].rawDisplayTime = text; // ተጠቃሚው ያስገባውን ኦሪጅናል ሰዓት ያስቀምጣል
+        userStates[chatId].rawDisplayTime = text;      
         userStates[chatId].step = 'CONFIRMATION_STEP';
 
         const { fullName, age, gender, country, phoneNumber, reason, mediaFileId } = userStates[chatId];
