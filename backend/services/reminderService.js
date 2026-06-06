@@ -70,7 +70,9 @@ function startReminderService() {
             );
 
             for (const patient of upcomingPatients) {
-                const apptTotalMinutes = getEATMinutes(patient.appointment_time);
+                // 🚀 FIX: `raw_display_time` ን መጠቀም
+                const displayTime = patient.raw_display_time || patient.appointment_time;
+                const apptTotalMinutes = getEATMinutes(displayTime);
                 if (apptTotalMinutes === null) continue;
 
                 const minutesUntilAppointment = apptTotalMinutes - currentTotalMinutes;
@@ -103,7 +105,8 @@ function startReminderService() {
                         // Telegram Push Delivery
                         if (patient.chat_id && /^\d+$/.test(patient.chat_id.trim())) {
                             try {
-                                const reminderMsg = `🔔 **የቀጠሮ ማስታወሻ | Appointment Reminder**\n\nጤና ይስጥልኝ **${patient.full_name}**፤ ለዶክተር ጌታነህ የጥርስ ክሊኒክ የያዙት ቀጠሮ ${remainingTextAm} ይደርሳል።\n\nHello **${patient.full_name}**, your appointment at Dr. Getaneh Specialty Dental Clinic is coming up ${remainingTextEn}.\n\n📅 **ቀን | Date:** ${patient.appointment_date}\n⏰ **ሰዓት | Time:** ${patient.appointment_time}\n\nእባክዎ በሰዓቱ ይገኙ። እናመሰግናለን! 🙏`;
+                                // 🚀 FIX: ማስታወሻው ላይ ${displayTime} ይጠቀማል
+                                const reminderMsg = `🔔 **የቀጠሮ ማስታወሻ | Appointment Reminder**\n\nጤና ይስጥልኝ **${patient.full_name}**፤ ለዶክተር ጌታነህ የጥርስ ክሊኒክ የያዙት ቀጠሮ ${remainingTextAm} ይደርሳል።\n\nHello **${patient.full_name}**, your appointment at Dr. Getaneh Specialty Dental Clinic is coming up ${remainingTextEn}.\n\n📅 **ቀን | Date:** ${patient.appointment_date}\n⏰ **ሰዓት | Time:** ${displayTime}\n\nእባክዎ በሰዓቱ ይገኙ። እናመሰግናለን! 🙏`;
                                 await reminderBot.sendMessage(patient.chat_id, reminderMsg, { parse_mode: 'Markdown' });
                                 console.log(`📩 Telegram ማስታወሻ ለ ${patient.full_name} በተሳካ ሁኔታ ተልኳል።`);
                             } catch (tgErr) {
@@ -127,7 +130,9 @@ function startReminderService() {
             );
 
             for (const patient of activePatients) {
-                const apptTotalMinutes = getEATMinutes(patient.appointment_time);
+                // 🚀 FIX: `raw_display_time` ን መጠቀም
+                const displayTime = patient.raw_display_time || patient.appointment_time;
+                const apptTotalMinutes = getEATMinutes(displayTime);
                 if (apptTotalMinutes === null) continue; 
 
                 const minutesPassed = currentTotalMinutes - apptTotalMinutes;

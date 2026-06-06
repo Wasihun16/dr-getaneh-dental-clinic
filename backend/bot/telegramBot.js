@@ -283,10 +283,89 @@ bot.on('callback_query', async (query) => {
         const selectedYear = data.replace('year_', '');
         const { tempMonth, tempDay, lang } = userStates[chatId];
         
-        userStates[chatId].appointmentDate = lang === 'am' 
+        const appointmentDate = lang === 'am' 
             ? `${tempMonth} ${tempDay}፤ ${selectedYear}`
             : `${tempMonth} ${tempDay}, ${selectedYear}`;
 
+        // 🛑 🚀 NEW DATE-ONLY VALIDATION 🚀 🛑
+        const now = new Date();
+        const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+        const currEnYear = eatNow.getUTCFullYear();
+        const currEnMonth = eatNow.getUTCMonth(); 
+        const currEnDay = eatNow.getUTCDate();
+
+        let isPastDate = false;
+        let isToday = false;
+
+        if (lang === 'en') {
+            const selMonthIdx = englishMonths.indexOf(tempMonth);
+            const selDayInt = parseInt(tempDay, 10);
+            const selYearInt = parseInt(selectedYear, 10);
+
+            if (selYearInt < currEnYear) { isPastDate = true; }
+            else if (selYearInt === currEnYear) {
+                if (selMonthIdx < currEnMonth) { isPastDate = true; }
+                else if (selMonthIdx === currEnMonth) {
+                    if (selDayInt < currEnDay) { isPastDate = true; }
+                    else if (selDayInt === currEnDay) { isToday = true; }
+                }
+            }
+        } else if (lang === 'am') {
+            const amharicDateFormatter = new Intl.DateTimeFormat('am-ET', { calendar: 'ethiopic', year: 'numeric', month: 'long', day: 'numeric' });
+            const currentAmDateParts = amharicDateFormatter.formatToParts(now);
+            let currAmYear = 2018; 
+            let currAmMonthStr = "";
+            let currAmDay = 1;
+
+            for (let part of currentAmDateParts) {
+                if (part.type === 'month') currAmMonthStr = part.value;
+                if (part.type === 'day') currAmDay = parseInt(part.value, 10);
+                if (part.type === 'year') currAmYear = parseInt(part.value, 10);
+            }
+            
+            const currAmMonthIdx = amharicMonths.indexOf(currAmMonthStr);
+            const selAmMonthIdx = amharicMonths.indexOf(tempMonth);
+            const selAmDayInt = parseInt(tempDay, 10);
+            const selAmYearInt = parseInt(selectedYear.replace(' ዓ.ም', ''), 10);
+
+            if (selAmYearInt < currAmYear) { isPastDate = true; }
+            else if (selAmYearInt === currAmYear) {
+                if (selAmMonthIdx !== -1 && currAmMonthIdx !== -1) {
+                    if (selAmMonthIdx < currAmMonthIdx) { isPastDate = true; }
+                    else if (selAmMonthIdx === currAmMonthIdx) {
+                        if (selAmDayInt < currAmDay) { isPastDate = true; }
+                        else if (selAmDayInt === currAmDay) { isToday = true; }
+                    }
+                }
+            }
+        }
+
+        // 🛑 ቀኑ ካለፈ (Past Date)
+        if (isPastDate) {
+            const errorMsg = lang === 'am' 
+                ? `❌ ይቅርታ፣ የመረጡት ቀን (${appointmentDate}) አስቀድሞ አልፏል!\n\nእባክዎ ትክክለኛ እና ወደፊት ያለ ቀን ይምረጡ 👇`
+                : `❌ Sorry, the selected date (${appointmentDate}) has already passed!\n\nPlease select a valid future date 👇`;
+            
+            userStates[chatId].step = 'SELECTING_MONTH'; 
+            
+            const monthList = lang === 'am' ? amharicMonths : englishMonths;
+            const monthButtons = [];
+            let row = [];
+            monthList.forEach((m, idx) => {
+                row.push({ text: m, callback_data: `month_${m}` });
+                if (row.length === 3 || idx === monthList.length - 1) {
+                    monthButtons.push(row);
+                    row = [];
+                }
+            });
+            
+            bot.sendMessage(chatId, errorMsg, { reply_markup: { inline_keyboard: monthButtons } }).catch(e => console.log(e.message));
+            return;
+        }
+
+        // ✅ ቀኑ ትክክል ከሆነ (ዛሬ ወይም ወደፊት ከሆነ)
+        userStates[chatId].appointmentDate = appointmentDate;
+        userStates[chatId].isToday = isToday; 
         userStates[chatId].step = 'WAITING_FOR_TIME';
 
         const prompt = lang === 'am' 
@@ -452,97 +531,46 @@ bot.on('message', async (msg) => {
     }
 
     else if (currentState === 'WAITING_FOR_TIME') {
-        const rawTime = text.trim();
-        const standardTime = convertToStandard24Hour(rawTime);
-        const inputMinutes = getEATMinutes(rawTime);
-        const now = new Date();
+        const timeInput = text.trim();
+        const totalMinutes = getEATMinutes(timeInput);
+        const standardTime = convertToStandard24Hour(timeInput);
         
-        if (standardTime === null || inputMinutes === null || inputMinutes >= 1440) {
-            const invalidTimeMsg = lang === 'am'
-                ? `❌ እባክዎ ትክክለኛ የሰዓት ፎርማት ያስገቡ! (ምሳሌ: 4:30 ጠዋት ወይም 2:00 PM)`
-                : `❌ Please enter a valid time format! (e.g., 10:30 AM or 2:00 PM)`;
-            return bot.sendMessage(chatId, invalidTimeMsg, { parse_mode: 'Markdown' }).catch(e => console.log(e.message));
+        if (totalMinutes === null || !standardTime || totalMinutes >= 1440) {
+            const errorMsg = lang === 'am' 
+                ? '❌ የተሳሳተ የሰዓት አገባብ! እባክዎ በትክክል ያስገቡ (ምሳሌ፡ 4:30 ጠዋት ወይም 2:00 PM)፡' 
+                : '❌ Invalid time format! Please try again (e.g., 10:30 AM or 2:00 PM):';
+            return bot.sendMessage(chatId, errorMsg);
         }
 
-        const ethiopiaTimeOptions = { timeZone: "Africa/Addis_Ababa", hour: '2-digit', minute: '2-digit', hour12: false };
-        const timeStr = now.toLocaleTimeString("en-US", ethiopiaTimeOptions);
-        const [currentHour, currentMinute] = timeStr.split(':').map(Number);
-        const currentTotalMinutes = (currentHour * 60) + currentMinute;
+        // 🛑 1. NIGHT / CLOSED HOURS CHECK 🌙
+        // ክሊኒኩ ከ 8:30 AM (510 min) እስከ 6:30 PM (1110 min) የሚሰራበት ጊዜ
+        if (totalMinutes < 510 || totalMinutes > 1110) { 
+            const closedMsg = lang === 'am' 
+                ? `🌙 ይቅርታ፣ ክሊኒኩ በዚህ ሰዓት ዝግ ነው።\n\n🕒 *የስራ ሰዓት፡* ከጠዋቱ 2:30 እስከ ምሽቱ 12:30 (8:30 AM - 6:30 PM) ብቻ ነው።\nእባክዎ በስራ ሰዓት ውስጥ ያለ ሰዓት ያስገቡ 👇`
+                : `🌙 Sorry, the clinic is closed at this time.\n\n🕒 *Working hours:* 8:30 AM to 6:30 PM.\nPlease enter a time within working hours 👇`;
+            return bot.sendMessage(chatId, closedMsg, { parse_mode: 'Markdown' });
+        }
 
-        let isPastTime = false;
-        const selectedDate = userStates[chatId].appointmentDate;
-
+        // 🛑 2. PAST TIME TODAY CHECK ⏳
+        const now = new Date();
         const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
-        const currEnYear = eatNow.getUTCFullYear();
-        const currEnMonth = eatNow.getUTCMonth(); 
-        const currEnDay = eatNow.getUTCDate();
+        const currentTotalMinutes = (eatNow.getUTCHours() * 60) + eatNow.getUTCMinutes();
 
-        const enMonthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        const amMonthsList = ['መስከረም', 'ጥቅምት', 'ህዳር', 'ታህሳስ', 'ጥር', 'የካቲት', 'መጋቢት', 'ሚያዝያ', 'ግንቦት', 'ሰኔ', 'ሐምሌ', 'ነሐሴ', 'ጳጉሜ'];
+        if (userStates[chatId].isToday && totalMinutes <= currentTotalMinutes) {
+            let curHour = eatNow.getUTCHours();
+            let curMin = eatNow.getUTCMinutes();
+            let ampm = curHour >= 12 ? 'PM' : 'AM';
+            curHour = curHour % 12 || 12;
+            const curTimeStr = `${curHour}:${curMin < 10 ? '0'+curMin : curMin} ${ampm}`;
 
-        if (lang === 'en') {
-            const dateParts = selectedDate.replace(',', '').split(' ');
-            if (dateParts.length >= 3) {
-                const selMonth = enMonthsList.indexOf(dateParts[0]);
-                const selDay = parseInt(dateParts[1], 10);
-                const selYear = parseInt(dateParts[2], 10);
-                
-                if (selYear < currEnYear) { isPastTime = true; }
-                else if (selYear === currEnYear) {
-                    if (selMonth < currEnMonth) { isPastTime = true; }
-                    else if (selMonth === currEnMonth) {
-                        if (selDay < currEnDay) { isPastTime = true; }
-                        else if (selDay === currEnDay && inputMinutes <= currentTotalMinutes) { isPastTime = true; }
-                    }
-                }
-            }
-        } else if (lang === 'am') {
-            const amharicDateFormatter = new Intl.DateTimeFormat('am-ET', { calendar: 'ethiopic', year: 'numeric', month: 'long', day: 'numeric' });
-            const currentAmDateParts = amharicDateFormatter.formatToParts(now);
-            let currAmYear = 2018; 
-            let currAmMonthStr = "";
-            let currAmDay = 1;
-
-            for (let part of currentAmDateParts) {
-                if (part.type === 'month') currAmMonthStr = part.value;
-                if (part.type === 'day') currAmDay = parseInt(part.value, 10);
-                if (part.type === 'year') currAmYear = parseInt(part.value, 10);
-            }
-            const currAmMonthIdx = amMonthsList.indexOf(currAmMonthStr);
-
-            const amMatch = selectedDate.match(/^([^\s]+)\s+(\d+)[፤፣]\s+(\d+)/);
-            if (amMatch) {
-                const selAmMonthStr = amMatch[1];
-                const selAmDay = parseInt(amMatch[2], 10);
-                const selAmYear = parseInt(amMatch[3], 10);
-                const selAmMonthIdx = amMonthsList.indexOf(selAmMonthStr);
-
-                if (selAmYear < currAmYear) { isPastTime = true; }
-                else if (selAmYear === currAmYear) {
-                    if (selAmMonthIdx !== -1 && currAmMonthIdx !== -1) {
-                        if (selAmMonthIdx < currAmMonthIdx) { isPastTime = true; }
-                        else if (selAmMonthIdx === currAmMonthIdx) {
-                            if (selAmDay < currAmDay) { isPastTime = true; }
-                            else if (selAmDay === currAmDay && inputMinutes <= currentTotalMinutes) { isPastTime = true; }
-                        }
-                    }
-                }
-            }
+            const pastMsg = lang === 'am'
+                ? `⏳ ይቅርታ፣ ያስገቡት ሰዓት አልፏል! አሁን ሰዓቱ ${curTimeStr} ነው።\nእባክዎ ወደፊት ያለ ሰዓት ያስገቡ 👇`
+                : `⏳ Sorry, this time has already passed! Current local time is ${curTimeStr}.\nPlease enter a valid future time 👇`;
+            return bot.sendMessage(chatId, pastMsg);
         }
 
-        if (isPastTime) {
-            let ltHour = currentHour >= 6 ? currentHour - 6 : currentHour + 18;
-            if (ltHour > 12) ltHour -= 12;
-            if (ltHour === 0) ltHour = 12;
-            const formattedMin = currentMinute < 10 ? '0' + currentMinute : currentMinute;
-            const period = currentHour >= 12 ? "ከሰዓት/ማታ" : "ጠዋት";
-
-            const pastTimeMsg = lang === 'am'
-                ? `❌ የመረጡት ጊዜ (ቀን ወይም ሰዓት) አልፏል! አሁን ሰዓቱ ${ltHour}:${formattedMin} ${period} ነው። እባክዎ ወደፊት ያለ ትክክለኛ ጊዜ ያስገቡ፦`
-                : `❌ The selected date or time has already passed! Current local time is ${currentHour}:${formattedMin}. Please enter a valid future time:`;
-            
-            return bot.sendMessage(chatId, pastTimeMsg).catch(e => console.log(e.message));
-        }
+        // 🛑 3. DOUBLE-BOOKING CONFLICT CHECK ❌
+        const selectedDate = userStates[chatId].appointmentDate;
 
         try {
             const [conflictSlots] = await db.query(
@@ -552,8 +580,8 @@ bot.on('message', async (msg) => {
 
             if (conflictSlots && conflictSlots.length > 0) {
                 const conflictMsg = lang === 'am'
-                    ? `❌ ይቅርታ፣ የመረጡት ሰዓት (${rawTime}) አሁን በሌላ ታካሚ ተይዟል። እባክዎ ሌላ የተለየ ሰዓት ያስገቡ👇፦`
-                    : `❌ Sorry, the selected time (${rawTime}) is already booked by another patient. Please enter a different time👇:`;
+                    ? `❌ ይቅርታ፣ የመረጡት ሰዓት (${timeInput}) አሁን በሌላ ታካሚ ተይዟል። እባክዎ ሌላ የተለየ ሰዓት ያስገቡ👇፦`
+                    : `❌ Sorry, the selected time (${timeInput}) is already booked by another patient. Please enter a different time👇:`;
                 return bot.sendMessage(chatId, conflictMsg).catch(e => console.log(e.message));
             }
         } catch (dbErr) {
@@ -562,15 +590,15 @@ bot.on('message', async (msg) => {
         }
 
         userStates[chatId].appointmentTime = standardTime; 
-        userStates[chatId].rawDisplayTime = rawTime;      
+        userStates[chatId].rawDisplayTime = timeInput;      
         userStates[chatId].step = 'CONFIRMATION_STEP';
 
         const { fullName, age, gender, country, phoneNumber, reason, mediaFileId } = userStates[chatId];
         const attached = mediaFileId === 'None' ? (lang === 'am' ? 'የለም' : 'No') : (lang === 'am' ? 'አዎ (ተያይዟል)' : 'Yes (Attached)');
 
         const summaryMsg = lang === 'am'
-            ? `📝 *እባክዎ መረጃዎን በጥንቃቄ ያረጋግጡ*:\n━━━━━━━━━━━━━━━━━━━━\n👤 *ስም:* ${fullName}\n🔢 *ዕድሜ:* ${age}\n🚻 *ጾታ:* ${gender}\n🌍 *ሀገር:* ${country}\n📱 *ስልክ:* ${phoneNumber}\n🦷 *ምክንያት:* ${reason}\n📁 *ፋይል:* ${attached}\n📅 *ቀን:* ${selectedDate}\n⏰ *ሰዓት:* ${rawTime}\n━━━━━━━━━━━━━━━━━━━━\nያስገቡት መረጃ ትክክል መሆኑን ያረጋግጣሉ?`
-            : `📝 *Please Review Your Details*:\n━━━━━━━━━━━━━━━━━━━━\n👤 *Name:* ${fullName}\n🔢 *Age:* ${age}\n🚻 *Gender:* ${gender}\n🌍 *Country:* ${country}\n📱 *Phone:* ${phoneNumber}\n🦷 *Reason:* ${reason}\n📁 *File:* ${attached}\n📅 *Date:* ${selectedDate}\n⏰ *Time:* ${rawTime}\n━━━━━━━━━━━━━━━━━━━━\nConfirm that all information is correct?`;
+            ? `📝 *እባክዎ መረጃዎን በጥንቃቄ ያረጋግጡ*:\n━━━━━━━━━━━━━━━━━━━━\n👤 *ስም:* ${fullName}\n🔢 *ዕድሜ:* ${age}\n🚻 *ጾታ:* ${gender}\n🌍 *ሀገር:* ${country}\n📱 *ስልክ:* ${phoneNumber}\n🦷 *ምክንያት:* ${reason}\n📁 *ፋይል:* ${attached}\n📅 *ቀን:* ${selectedDate}\n⏰ *ሰዓት:* ${timeInput}\n━━━━━━━━━━━━━━━━━━━━\nያስገቡት መረጃ ትክክል መሆኑን ያረጋግጣሉ?`
+            : `📝 *Please Review Your Details*:\n━━━━━━━━━━━━━━━━━━━━\n👤 *Name:* ${fullName}\n🔢 *Age:* ${age}\n🚻 *Gender:* ${gender}\n🌍 *Country:* ${country}\n📱 *Phone:* ${phoneNumber}\n🦷 *Reason:* ${reason}\n📁 *File:* ${attached}\n📅 *Date:* ${selectedDate}\n⏰ *Time:* ${timeInput}\n━━━━━━━━━━━━━━━━━━━━\nConfirm that all information is correct?`;
 
         const keyboard = lang === 'am'
             ? [[{ text: '✅ አዎ፣ አረጋግጣለሁ' }, { text: '❌ ስህተት አለበት (እንደገና ጀምር)' }]]
@@ -590,6 +618,7 @@ bot.on('message', async (msg) => {
             const { fullName, age, gender, country, phoneNumber, reason, appointmentDate, appointmentTime, rawDisplayTime, mediaFileId, mediaType, rawTelegramFileId } = userStates[chatId];
             
             try {
+                // 🛑 FINAL RACE CONDITION DOUBLE-BOOKING SHIELD
                 const [raceConditionCheck] = await db.query(
                     'SELECT id FROM patients WHERE TRIM(appointment_date) = ? AND TRIM(appointment_time) = ? AND reminder_sent != 2',
                     [String(appointmentDate).trim(), String(appointmentTime).trim()]
@@ -656,6 +685,7 @@ cron.schedule('* * * * *', async () => {
         const todayAmSemicolon = `${amharicDateStr}፤ ${currentYearAm}`.replace(/\s+/g, ' ').trim();
         const todayEnFull = `${englishDateStr}, ${currentYearEn}`.replace(/\s+/g, ' ').trim();
 
+        // 🔍 ሀ. ማስታወሻ መላክ
         const [upcomingPatients] = await db.query(
             'SELECT * FROM patients WHERE chat_id IS NOT NULL AND (appointment_date = ? OR appointment_date = ? OR appointment_date = ?) AND reminder_sent = 0', 
             [todayAmComma, todayAmSemicolon, todayEnFull]
@@ -703,6 +733,7 @@ cron.schedule('* * * * *', async () => {
             }
         }
 
+        // 🔍 ለ. 20 ደቂቃ ሲያረፍዱ ቀጠሮ መሰረዝ
         const [activePatients] = await db.query(
             'SELECT * FROM patients WHERE chat_id IS NOT NULL AND (appointment_date = ? OR appointment_date = ? OR appointment_date = ?) AND reminder_sent = 1', 
             [todayAmComma, todayAmSemicolon, todayEnFull]
