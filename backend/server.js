@@ -61,7 +61,7 @@ if (bot && startReminderService) {
     startReminderService(bot);
     console.log('🔔 የማስታወሻ ሲስተም (Telegram-Only Reminder) በ Render ላይ በጀርባ መሥራት ጀምሯል...');
 } else {
-    console.log('ℹ️ Local Environment ተገኝቷል፦ በኮምፒውተርህ ላይ የቴሌግራም ቦት እንዳይጋጭ ሙሉ በሙሉ ታግዷል።');
+    console.log('ℹ️ Local Environment ተገኝቷል፦ በኮምፒውተር ላይ የቴሌግራም ቦት እንዳይጋጭ ሙሉ በሙሉ ታግዷል።');
 }
 
 // ዳታቤዙ መገናኘቱን መሞከሪያ እና ሰንጠረዥ መፍጠሪያ

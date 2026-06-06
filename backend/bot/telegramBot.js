@@ -107,7 +107,7 @@ function convertToStandard24Hour(timeStr) {
 // 🔘 Official Bot Menu Commands
 bot.setMyCommands([
     { command: '/start', description: 'ዋና ገጽ / Main Menu' },
-    { command: '/info', description: 'አድራሻ እና ሎኬشن / Clinic Address' },
+    { command: '/info', description: 'አድራሻ እና መገኛ/ Clinic Address' },
     { command: '/status', description: 'ቀጠሮዎን ለማየት / Check Appointment' },
     { command: '/cancel', description: 'ያቋርጡ / Cancel Process' }
 ]);
@@ -297,6 +297,7 @@ bot.on('callback_query', async (query) => {
 
     bot.answerCallbackQuery(query.id).catch(() => {});
 });
+
 // 💬 Core Messaging Flow
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -440,7 +441,10 @@ bot.on('message', async (msg) => {
             }
         });
 
-        const ackMsg = lang === 'am' ? '✅ ተቀብለናል / አልፈነዋል' : '✅ Received / Skipped';
+        const ackMsg = hasMedia 
+            ? (lang === 'am' ? '✅ ፋይሉን ተቀብለናል' : '✅ File Received') 
+            : (lang === 'am' ? '⏭️ አልፈነዋል' : '⏭️ Skipped');
+
         bot.sendMessage(chatId, ackMsg, { reply_markup: { remove_keyboard: true } }).then(() => {
             const prompt = lang === 'am' ? `📅 እባክዎ የሚመጡበትን ወር ይምረጡ 👇` : `📅 Please select your preferred Month 👇`;
             bot.sendMessage(chatId, prompt, { reply_markup: { inline_keyboard: monthButtons } }).catch(e => console.log(e.message));
@@ -451,50 +455,81 @@ bot.on('message', async (msg) => {
         const rawTime = text.trim();
         const standardTime = convertToStandard24Hour(rawTime);
         const inputMinutes = getEATMinutes(rawTime);
+        const now = new Date();
         
-        if (standardTime === null || inputMinutes === null) {
+        if (standardTime === null || inputMinutes === null || inputMinutes >= 1440) {
             const invalidTimeMsg = lang === 'am'
                 ? `❌ እባክዎ ትክክለኛ የሰዓት ፎርማት ያስገቡ! (ምሳሌ: 4:30 ጠዋት ወይም 2:00 PM)`
                 : `❌ Please enter a valid time format! (e.g., 10:30 AM or 2:00 PM)`;
             return bot.sendMessage(chatId, invalidTimeMsg, { parse_mode: 'Markdown' }).catch(e => console.log(e.message));
         }
 
-        const now = new Date();
         const ethiopiaTimeOptions = { timeZone: "Africa/Addis_Ababa", hour: '2-digit', minute: '2-digit', hour12: false };
         const timeStr = now.toLocaleTimeString("en-US", ethiopiaTimeOptions);
         const [currentHour, currentMinute] = timeStr.split(':').map(Number);
         const currentTotalMinutes = (currentHour * 60) + currentMinute;
 
-        const amharicDateStr = new Intl.DateTimeFormat('am-ET', { calendar: 'ethiopic', month: 'long', day: 'numeric' }).format(now);
-        const englishDateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-        
-        const currentYearAm = "2018 ዓ.ም"; 
-        const currentYearEn = "2026";
-        
-        const todayAmComma = `${amharicDateStr}፣ ${currentYearAm}`.replace(/\s+/g, ' ').trim();
-        const todayAmSemicolon = `${amharicDateStr}፤ ${currentYearAm}`.replace(/\s+/g, ' ').trim();
-        const todayEnFull = `${englishDateStr}, ${currentYearEn}`.replace(/\s+/g, ' ').trim();
-
+        let isPastTime = false;
         const selectedDate = userStates[chatId].appointmentDate;
 
-        // 🛑 1. PERFECT PAST TIME CHECK (በጥብቅ የተሻሻለ የጊዜ ማጣሪያ) ⏳
-        let isPastTime = false;
+        const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+        const currEnYear = eatNow.getUTCFullYear();
+        const currEnMonth = eatNow.getUTCMonth(); 
+        const currEnDay = eatNow.getUTCDate();
 
-        // ሀ. የዛሬ ቀን ማረጋገጫ (Amharic & English Today Check)
-        if (selectedDate === todayAmComma || selectedDate === todayAmSemicolon || selectedDate === todayEnFull) {
-            if (inputMinutes <= currentTotalMinutes) {
-                isPastTime = true;
+        const enMonthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const amMonthsList = ['መስከረም', 'ጥቅምት', 'ህዳር', 'ታህሳስ', 'ጥር', 'የካቲት', 'መጋቢት', 'ሚያዝያ', 'ግንቦት', 'ሰኔ', 'ሐምሌ', 'ነሐሴ', 'ጳጉሜ'];
+
+        if (lang === 'en') {
+            const dateParts = selectedDate.replace(',', '').split(' ');
+            if (dateParts.length >= 3) {
+                const selMonth = enMonthsList.indexOf(dateParts[0]);
+                const selDay = parseInt(dateParts[1], 10);
+                const selYear = parseInt(dateParts[2], 10);
+                
+                if (selYear < currEnYear) { isPastTime = true; }
+                else if (selYear === currEnYear) {
+                    if (selMonth < currEnMonth) { isPastTime = true; }
+                    else if (selMonth === currEnMonth) {
+                        if (selDay < currEnDay) { isPastTime = true; }
+                        else if (selDay === currEnDay && inputMinutes <= currentTotalMinutes) { isPastTime = true; }
+                    }
+                }
             }
-        } 
-        // ለ. ለእንግሊዝኛ ምርጫ (English Date Parsing for any past date & time)
-        else if (lang === 'en') {
-            const parsedDateTime = new Date(`${selectedDate} ${standardTime}`);
-            if (!isNaN(parsedDateTime) && parsedDateTime < now) {
-                isPastTime = true;
+        } else if (lang === 'am') {
+            const amharicDateFormatter = new Intl.DateTimeFormat('am-ET', { calendar: 'ethiopic', year: 'numeric', month: 'long', day: 'numeric' });
+            const currentAmDateParts = amharicDateFormatter.formatToParts(now);
+            let currAmYear = 2018; 
+            let currAmMonthStr = "";
+            let currAmDay = 1;
+
+            for (let part of currentAmDateParts) {
+                if (part.type === 'month') currAmMonthStr = part.value;
+                if (part.type === 'day') currAmDay = parseInt(part.value, 10);
+                if (part.type === 'year') currAmYear = parseInt(part.value, 10);
+            }
+            const currAmMonthIdx = amMonthsList.indexOf(currAmMonthStr);
+
+            const amMatch = selectedDate.match(/^([^\s]+)\s+(\d+)[፤፣]\s+(\d+)/);
+            if (amMatch) {
+                const selAmMonthStr = amMatch[1];
+                const selAmDay = parseInt(amMatch[2], 10);
+                const selAmYear = parseInt(amMatch[3], 10);
+                const selAmMonthIdx = amMonthsList.indexOf(selAmMonthStr);
+
+                if (selAmYear < currAmYear) { isPastTime = true; }
+                else if (selAmYear === currAmYear) {
+                    if (selAmMonthIdx !== -1 && currAmMonthIdx !== -1) {
+                        if (selAmMonthIdx < currAmMonthIdx) { isPastTime = true; }
+                        else if (selAmMonthIdx === currAmMonthIdx) {
+                            if (selAmDay < currAmDay) { isPastTime = true; }
+                            else if (selAmDay === currAmDay && inputMinutes <= currentTotalMinutes) { isPastTime = true; }
+                        }
+                    }
+                }
             }
         }
 
-        // ሰዓቱ ካለፈበት የሚሰጠው ምላሽ
         if (isPastTime) {
             let ltHour = currentHour >= 6 ? currentHour - 6 : currentHour + 18;
             if (ltHour > 12) ltHour -= 12;
@@ -503,13 +538,12 @@ bot.on('message', async (msg) => {
             const period = currentHour >= 12 ? "ከሰዓት/ማታ" : "ጠዋት";
 
             const pastTimeMsg = lang === 'am'
-                ? `❌ የመረጡት ጊዜ (ቀን ወይም ሰዓት) አልፏል! አሁን ሰዓቱ ${ltHour}:${formattedMin} ${period} ሆኗል። እባክዎ ወደፊት ያለ ትክክለኛ ሰዓት ያስገቡ፦`
-                : `❌ The selected time has already passed! Current local time is ${currentHour}:${formattedMin}. Please enter a valid future time:`;
+                ? `❌ የመረጡት ጊዜ (ቀን ወይም ሰዓት) አልፏል! አሁን ሰዓቱ ${ltHour}:${formattedMin} ${period} ነው። እባክዎ ወደፊት ያለ ትክክለኛ ጊዜ ያስገቡ፦`
+                : `❌ The selected date or time has already passed! Current local time is ${currentHour}:${formattedMin}. Please enter a valid future time:`;
             
             return bot.sendMessage(chatId, pastTimeMsg).catch(e => console.log(e.message));
         }
 
-        // 🛑 2. PERFECT DOUBLE-BOOKING CHECK (የቀጠሮ መደራረብ የመጀመሪያ ማጣሪያ) ❌
         try {
             const [conflictSlots] = await db.query(
                 'SELECT id FROM patients WHERE TRIM(appointment_date) = ? AND TRIM(appointment_time) = ? AND reminder_sent != 2',
@@ -555,7 +589,6 @@ bot.on('message', async (msg) => {
         if (text.includes('✅') || text.toLowerCase().includes('yes')) {
             const { fullName, age, gender, country, phoneNumber, reason, appointmentDate, appointmentTime, rawDisplayTime, mediaFileId, mediaType, rawTelegramFileId } = userStates[chatId];
             
-            // 🛑 3. FINAL DOUBLE-BOOKING SHIELD (የመጨረሻው ጥበቃ - Race Condition Check) ❌
             try {
                 const [raceConditionCheck] = await db.query(
                     'SELECT id FROM patients WHERE TRIM(appointment_date) = ? AND TRIM(appointment_time) = ? AND reminder_sent != 2',
@@ -623,7 +656,6 @@ cron.schedule('* * * * *', async () => {
         const todayAmSemicolon = `${amharicDateStr}፤ ${currentYearAm}`.replace(/\s+/g, ' ').trim();
         const todayEnFull = `${englishDateStr}, ${currentYearEn}`.replace(/\s+/g, ' ').trim();
 
-        // 🔍 ሀ. ከቀጠሮ እስከ 2 ሰዓት በፊት ያለውን ጊዜ በማስላት ማስታወሻ መላክ
         const [upcomingPatients] = await db.query(
             'SELECT * FROM patients WHERE chat_id IS NOT NULL AND (appointment_date = ? OR appointment_date = ? OR appointment_date = ?) AND reminder_sent = 0', 
             [todayAmComma, todayAmSemicolon, todayEnFull]
@@ -671,7 +703,6 @@ cron.schedule('* * * * *', async () => {
             }
         }
 
-        // 🔍 ለ. 20 ደቂቃ ሲያረፍዱ ቀጠሮ መሰረዝ
         const [activePatients] = await db.query(
             'SELECT * FROM patients WHERE chat_id IS NOT NULL AND (appointment_date = ? OR appointment_date = ? OR appointment_date = ?) AND reminder_sent = 1', 
             [todayAmComma, todayAmSemicolon, todayEnFull]
