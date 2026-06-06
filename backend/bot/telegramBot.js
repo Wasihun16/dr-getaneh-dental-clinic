@@ -776,3 +776,4 @@ cron.schedule('* * * * *', async () => {
 console.log('🏁 የቦት ሲስተም እና የቴሌግራም ክሮን ጃብ በተሳካ ሁኔታ ተነስተዋል...');
 
 module.exports = bot;
+});

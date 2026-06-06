@@ -342,7 +342,7 @@ function App() {
           <div className="top-bar-content">
             <span className="pulse-dot"></span>
             <p>
-              <strong>የስራ ቀናት፦ ከሰኞ - ቅዳሜ (እስከ ማታ 11:30) | Working Hours: Mon - Sat (Until 5:30 PM):</strong> 
+              <strong>የስራ ቀናት፦ ከሰኞ - ቅዳሜ (እስከ 12 ማታ ) | Working Hours: Mon - Sat (Until 6 PM):</strong> 
               {" "}ይደውሉልን (Call Us) <a href="tel:+251930641483" className="top-bar-phone">+251 930 64 14 83</a>
             </p>
           </div>
