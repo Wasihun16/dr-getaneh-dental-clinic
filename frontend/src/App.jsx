@@ -101,13 +101,13 @@ function App() {
       }
 
     } else {
-      // 🛠️ የሰራተኞች (Staff) መግቢያ አመክንዮ
-      if (loginPassword === "admin123") {
+      // 🛠️ የሰራተኞች (Staff) መግቢያ አመክንዮ - .env variables implemented here 🔒
+      if (loginPassword === import.meta.env.VITE_ADMIN_PASSWORD) {
         setUserRole("Admin");
         setView("dashboard");
         setActiveTab("dashboard");
         setLoginPassword("");
-      } else if (loginPassword === "recep123") {
+      } else if (loginPassword === import.meta.env.VITE_RECEP_PASSWORD) {
         setUserRole("Receptionist");
         setView("dashboard");
         setActiveTab("dashboard");
