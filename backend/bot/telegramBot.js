@@ -529,16 +529,27 @@ bot.on('message', async (msg) => {
             bot.sendMessage(chatId, prompt, { reply_markup: { inline_keyboard: monthButtons } }).catch(e => console.log(e.message));
         }).catch(e => console.log(e.message));
     }
+else if (currentState === 'WAITING_FOR_TIME') {
+        let timeInput = text.trim().toLowerCase();
+        
+        // 🚀 AUTO-SANITIZE EDGE CASE (ምስል 4 ላይ ላጋጠመው ስህተት መፍትሄ)
+        // ተጠቃሚው የ24-ሰዓት አቆጣጠር (ለምሳሌ ከ12 ሰዓት በላይ የሆኑትን 14:30፣ 23:06) ጽፎ AM/PM ወይም የአማርኛ ማሻሻያዎችን ከቀላቀለ በራሱ ያጠፋቸዋል
+        const match24h = timeInput.match(/^(\d{1,2}):(\d{2})/);
+        if (match24h) {
+            const hr = parseInt(match24h[1]);
+            if (hr >= 12) {
+                // ሰዓቱ ከ12 በላይ ከሆነ am/pm ወይም የአማርኛ ማሻሻያዎችን ያስወግዳል
+                timeInput = timeInput.replace(/(am|pm|ጠዋት|ከሰዓት|ማታ|ምሽት|ሌሊት)/g, '').trim();
+            }
+        }
 
-    else if (currentState === 'WAITING_FOR_TIME') {
-        const timeInput = text.trim();
         const totalMinutes = getEATMinutes(timeInput);
         const standardTime = convertToStandard24Hour(timeInput);
         
         if (totalMinutes === null || !standardTime || totalMinutes >= 1440) {
             const errorMsg = lang === 'am' 
-                ? '❌ የተሳሳተ የሰዓት አገባብ! እባክዎ በትክክል ያስገቡ (ምሳሌ፡ 4:30 ጠዋት ወይም 2:00 PM)፡' 
-                : '❌ Invalid time format! Please try again (e.g., 10:30 AM or 2:00 PM):';
+                ? '❌ የተሳሳተ የሰዓት አገባብ! እባክዎ በትክክል ያስገቡ (ምሳሌ፡ 4:30 ጠዋት፣ 2:00 PM ወይም 14:30)፦' 
+                : '❌ Invalid time format! Please try again (e.g., 10:30 AM, 2:00 PM or 14:30):';
             return bot.sendMessage(chatId, errorMsg);
         }
 
@@ -551,7 +562,7 @@ bot.on('message', async (msg) => {
             return bot.sendMessage(chatId, closedMsg, { parse_mode: 'Markdown' });
         }
 
-        // 🛑 2. PAST TIME TODAY CHECK ⏳
+        // 🛑 2. PAST TIME TODAY CHECK ⏳ (ቀጠሮው ለዛሬ ከሆነ ብቻ ነው የሚመረምረው)
         const now = new Date();
         const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
         const currentTotalMinutes = (eatNow.getUTCHours() * 60) + eatNow.getUTCMinutes();
@@ -580,8 +591,8 @@ bot.on('message', async (msg) => {
 
             if (conflictSlots && conflictSlots.length > 0) {
                 const conflictMsg = lang === 'am'
-                    ? `❌ ይቅርታ፣ የመረጡት ሰዓት (${timeInput}) አሁን በሌላ ታካሚ ተይዟል። እባክዎ ሌላ የተለየ ሰዓት ያስገቡ👇፦`
-                    : `❌ Sorry, the selected time (${timeInput}) is already booked by another patient. Please enter a different time👇:`;
+                    ? `❌ ይቅርታ፣ የመረጡት ሰዓት (${text}) አሁን በሌላ ታካሚ ተይዟል። እባክዎ ሌላ የተለየ ሰዓት ያስገቡ👇፦`
+                    : `❌ Sorry, the selected time (${text}) is already booked by another patient. Please enter a different time👇:`;
                 return bot.sendMessage(chatId, conflictMsg).catch(e => console.log(e.message));
             }
         } catch (dbErr) {
@@ -590,15 +601,15 @@ bot.on('message', async (msg) => {
         }
 
         userStates[chatId].appointmentTime = standardTime; 
-        userStates[chatId].rawDisplayTime = timeInput;      
+        userStates[chatId].rawDisplayTime = text; // ተጠቃሚው ያስገባውን ኦሪጅናል ሰዓት ያስቀምጣል
         userStates[chatId].step = 'CONFIRMATION_STEP';
 
         const { fullName, age, gender, country, phoneNumber, reason, mediaFileId } = userStates[chatId];
         const attached = mediaFileId === 'None' ? (lang === 'am' ? 'የለም' : 'No') : (lang === 'am' ? 'አዎ (ተያይዟል)' : 'Yes (Attached)');
 
         const summaryMsg = lang === 'am'
-            ? `📝 *እባክዎ መረጃዎን በጥንቃቄ ያረጋግጡ*:\n━━━━━━━━━━━━━━━━━━━━\n👤 *ስም:* ${fullName}\n🔢 *ዕድሜ:* ${age}\n🚻 *ጾታ:* ${gender}\n🌍 *ሀገር:* ${country}\n📱 *ስልክ:* ${phoneNumber}\n🦷 *ምክንያት:* ${reason}\n📁 *ፋይል:* ${attached}\n📅 *ቀን:* ${selectedDate}\n⏰ *ሰዓት:* ${timeInput}\n━━━━━━━━━━━━━━━━━━━━\nያስገቡት መረጃ ትክክል መሆኑን ያረጋግጣሉ?`
-            : `📝 *Please Review Your Details*:\n━━━━━━━━━━━━━━━━━━━━\n👤 *Name:* ${fullName}\n🔢 *Age:* ${age}\n🚻 *Gender:* ${gender}\n🌍 *Country:* ${country}\n📱 *Phone:* ${phoneNumber}\n🦷 *Reason:* ${reason}\n📁 *File:* ${attached}\n📅 *Date:* ${selectedDate}\n⏰ *Time:* ${timeInput}\n━━━━━━━━━━━━━━━━━━━━\nConfirm that all information is correct?`;
+            ? `📝 *እባክዎ መረጃዎን በጥንቃቄ ያረጋግጡ*:\n━━━━━━━━━━━━━━━━━━━━\n👤 *ስም:* ${fullName}\n🔢 *ዕድሜ:* ${age}\n🚻 *ጾታ:* ${gender}\n🌍 *ሀገር:* ${country}\n📱 *ስልክ:* ${phoneNumber}\n🦷 *ምክንያት:* ${reason}\n📁 *ፋይል:* ${attached}\n📅 *ቀን:* ${selectedDate}\n⏰ *ሰዓት:* ${text}\n━━━━━━━━━━━━━━━━━━━━\nያስገቡት መረጃ ትክክል መሆኑን ያረጋግጣሉ?`
+            : `📝 *Please Review Your Details*:\n━━━━━━━━━━━━━━━━━━━━\n👤 *Name:* ${fullName}\n🔢 *Age:* ${age}\n🚻 *Gender:* ${gender}\n🌍 *Country:* ${country}\n📱 *Phone:* ${phoneNumber}\n🦷 *Reason:* ${reason}\n📁 *File:* ${attached}\n📅 *Date:* ${selectedDate}\n⏰ *Time:* ${text}\n━━━━━━━━━━━━━━━━━━━━\nConfirm that all information is correct?`;
 
         const keyboard = lang === 'am'
             ? [[{ text: '✅ አዎ፣ አረጋግጣለሁ' }, { text: '❌ ስህተት አለበት (እንደገና ጀምር)' }]]
@@ -629,7 +640,7 @@ bot.on('message', async (msg) => {
                     const blockMsg = lang === 'am'
                         ? `⚠️ *ይቅርታ፣ ይህ ሰዓት አሁን ከጥቂት ሰከንዶች በፊት በሌላ ታካሚ ተይዟል!* እባክዎ /start ብለው አዲስ ሰዓት በድጋሚ ይምረጡ።`
                         : `⚠️ *Sorry, this time slot was just booked by another patient a few seconds ago!* Please type /start to choose another time.`;
-                    return bot.sendMessage(chatId, blockMsg, { reply_markup: { remove_keyboard: true } }).catch(e => console.log(e.message));
+                    return bot.sendMessage(chatId, blockMsg, { reply_keyboard: true, reply_markup: { remove_keyboard: true } }).catch(e => console.log(e.message));
                 }
 
                 const ticketId = 'DG-' + Math.floor(1000 + Math.random() * 9000); 
@@ -640,8 +651,8 @@ bot.on('message', async (msg) => {
                 delete userStates[chatId]; 
                 
                 const successMsg = lang === 'am'
-                    ? `✅ *ቀጠሮዎ በተሳካ ሁኔታ ተረጋግጧል!*\n\n🎫 *የቀጠሮ መለያ (Ticket ID):* \`${ticketId}\`\n\n👤 *ስም:* ${fullName}\n📅 *ቀን:* ${appointmentDate}\n⏰ *ሰዓት:* ${rawDisplayTime}\n━━━━━━━━━━━━━━━━━━━━\n💬 *ማሳሰቢያ፦* ከተያዘልዎ የቀጠሮ ሰዓት አስቀድሞ የማስታወሻ መልእክት በዚሁ ቦት በኩል ይላክልዎታል።\n━━━━━━━━━━━━━━━━━━━━\n📞 *ለበለጠ መረጃ ደውሉ:* \`0985952016\`\n📍 *አድራሻ:* 5 ኪሎ፤ ከብሔራዊ ሙዚየም ፊት ለፊት\n🗺️ [የጉግል ማፕ አቅጣጫ ለመክፈት እዚህ ይጫኑ](https://maps.google.com)\n\n🙏 ክሊኒክ ሲመጡ ይህንን መለያ ቁጥር (\`${ticketId}\`) ያሳዩ። ቀጠሮዎን ለማየት በማንኛውም ጊዜ /status ብለው ይጫኑ!`
-                    : `✅ *Appointment Confirmed!*\n\n🎫 *Ticket ID:* \`${ticketId}\`\n\n👤 *Name:* ${fullName}\n📅 *Date:* ${appointmentDate}\n⏰ *Time:* ${rawDisplayTime}\n━━━━━━━━━━━━━━━━━━━━\n💬 *Note:* A reminder message will be sent to you via this bot before your appointment time.\n━━━━━━━━━━━━━━━━━━━━\n📞 *Call for info:* \`0985952016\`\n📍 *Address:* 5 Kilo, In front of National Museum\n🗺️ [Click here for Google Maps](https://maps.google.com)\n\n🙏 Present this Ticket ID (\`${ticketId}\`) upon arrival. Type /status anytime to check your appointment!`;
+                    ? `✅ *ቀጠሮዎ በተሳካ ሁኔታ ተረጋግጧል!*\n\n🎫 *የቀጠሮ መለያ (Ticket ID):* \`${ticketId}\`\n\n👤 *ስም:* ${fullName}\n📅 *ቀን:* ${appointmentDate}\n⏰ *ሰዓት:* ${rawDisplayTime}\n━━━━━━━━━━━━━━━━━━━━\n💬 *ማሳሰቢያ፦* ከተያዘልዎ የቀጠሮ ሰዓት አስቀድሞ የማስታወሻ መልእክት በዚሁ ቦት በኩል ይላክልዎታል።\n━━━━━━━━━━━━━━━━━━━━\n📞 *ለበለጠ መረጃ ደውሉ:* \`0985952016\`\n📍 *አድራሻ:* 5 ኪሎ፤ ከብሔራዊ ሙዚየም ፊት ለፊት\n🗺️ [የጉግል ማፕ አቅጣጫ ለመክፈት እዚህ ይጫኑ](http://maps.google.com/?q=5+Kilo+National+Museum+Addis+Ababa)\n\n🙏 ክሊኒክ ሲመጡ ይህንን መለያ ቁጥር (\`${ticketId}\`) ያሳዩ። ቀጠሮዎን ለማየት በማንኛውም ጊዜ /status ብለው ይጫኑ!`
+                    : `✅ *Appointment Confirmed!*\n\n🎫 *Ticket ID:* \`${ticketId}\`\n\n👤 *Name:* ${fullName}\n📅 *Date:* ${appointmentDate}\n⏰ *Time:* ${rawDisplayTime}\n━━━━━━━━━━━━━━━━━━━━\n💬 *Note:* A reminder message will be sent to you via this bot before your appointment time.\n━━━━━━━━━━━━━━━━━━━━\n📞 *Call for info:* \`0985952016\`\n📍 *Address:* 5 Kilo, In front of National Museum\n🗺️ [Click here for Google Maps](http://maps.google.com/?q=5+Kilo+National+Museum+Addis+Ababa)\n\n🙏 Present this Ticket ID (\`${ticketId}\`) upon arrival. Type /status anytime to check your appointment!`;
                 
                 bot.sendMessage(chatId, successMsg, { parse_mode: 'Markdown', reply_markup: { remove_keyboard: true }, disable_web_page_preview: false }).catch(e => console.log(e.message));
 
@@ -662,8 +673,6 @@ bot.on('message', async (msg) => {
             }
         }
     }
-});
-
 // ========================================================
 // 3. የጀርባ ክሮን ሲስተም (የቴሌግራም ብቻ ማስታወሻ እና መሰረዣ)
 // ========================================================
