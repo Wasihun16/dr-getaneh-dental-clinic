@@ -117,7 +117,7 @@ app.get('/api/patients', async (req, res) => {
     }
 });
 
-// 🌐 📥 ኒው ዌብሳይት ፎርም ቀጠሮ መያዣ API
+// 🌐 📥 ኒው ዌብሳይት ፎርም ቀጠሮ መያዣ API (በ Past Time Check የተሻሻለ 🚀)
 app.post('/api/web-book', upload.single('mediaFile'), async (req, res) => {
     try {
         const { fullName, age, gender, country, phoneNumber, reason, appointmentDate, appointmentTime } = req.body;
@@ -125,7 +125,18 @@ app.post('/api/web-book', upload.single('mediaFile'), async (req, res) => {
         const targetDate = String(appointmentDate).trim();
         const targetTime = String(appointmentTime).trim();
 
-        // 🛑 PREVENT DOUBLE-BOOKING: Strict verification with SQL TRIM()
+        // 🛑 1. PAST TIME CHECK: ሰዓቱ ማለፉን ማረጋገጥ (ከ Backend በኩል ደህንነትን ለማረጋገጥ) ⏳
+        const now = new Date();
+        const requestedDateTime = new Date(`${targetDate}T${targetTime}`);
+        
+        if (requestedDateTime < now) {
+            return res.status(400).json({
+                success: false,
+                message: 'ይቅርታ፣ እባክዎ ያለፈ ሰዓት አይምረጡ! ወደፊት ያለ ትክክለኛ ሰዓት ይምረጡ። (You cannot book a past time. Please select a valid future time.)'
+            });
+        }
+
+        // 🛑 2. PREVENT DOUBLE-BOOKING: Strict verification with SQL TRIM() ❌
         const [existingAppointments] = await db.query(
             'SELECT id FROM patients WHERE TRIM(appointment_date) = ? AND TRIM(appointment_time) = ? AND reminder_sent != 2',
             [targetDate, targetTime]
@@ -138,6 +149,7 @@ app.post('/api/web-book', upload.single('mediaFile'), async (req, res) => {
             });
         }
 
+        // 🎟️ ሁለቱንም ማጣሪያዎች በተሳካ ሁኔታ ካለፈ ብቻ ወደ መመዝገብ ያልፋል ✅
         const ticketId = 'DG-W' + Math.floor(1000 + Math.random() * 9000); 
         
         let dbMediaFileId = 'None';

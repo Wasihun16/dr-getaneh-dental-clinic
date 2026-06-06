@@ -369,7 +369,7 @@ function App() {
               
               <div className="nav-dropdown-container" ref={dropdownRef} data-visible={dropdownOpen ? "true" : "false"}>
                 <button type="button" className={`dropdown-toggle-btn ${["team", "gallery", "tips", "why-us", "faq", "pricing"].includes(activeTab) ? "active-nav-item" : ""}`} onClick={() => setDropdownOpen(!dropdownOpen)}>
-                  ተጨማሪ መረጃ (Explore) <span className="dropdown-chevron">▶</span>
+                  ተጨማሪ መረጃ (Explore) <span className="dropdown-chevron">▼</span>
                 </button>
                 <div className="nav-dropdown-menu">
                   <a href="#pricing" onClick={() => { navigateToSection("pricing"); setDropdownOpen(false); }}>ዋጋዎች (Pricing)</a>
@@ -1015,11 +1015,20 @@ function App() {
                         </select>
                       </div>
                     </div>
-
-                    <div className="form-row">
+<div className="form-row">
                       <div className="form-group flex-1">
                         <label>ቀጠሮ ቀን (Date) <span>*</span></label>
-                        <input type="date" name="appointmentDate" value={formData.appointmentDate} required onChange={handleFormChange} />
+                        <input 
+                          type="date" 
+                          name="appointmentDate" 
+                          value={formData.appointmentDate} 
+                          min={new Date().toISOString().split('T')[0]} /* 🚀 ትላንትናን እና ያለፉ ቀኖችን እንዳይመረጡ ይዘጋል */
+                          required 
+                          onChange={(e) => {
+                            // ቀን ሲቀየር (ለምሳሌ ከዛሬ ወደ ነገ)፣ አዲስ ሰዓት እንዲመርጡ የድሮውን የተመረጠ ሰዓት ባዶ ያደርገዋል
+                            setFormData({ ...formData, appointmentDate: e.target.value, appointmentTime: '' });
+                          }} 
+                        />
                       </div>
                     </div>
                     
@@ -1039,14 +1048,29 @@ function App() {
                             { value: '15:30', label: '9:30 ከሰዓት (03:30 PM)' },
                             { value: '17:00', label: '11:00 ምሽት (05:00 PM)' },
                           ].map((slot) => {
+                            // 1. በሌላ ሰው የተያዘ መሆኑን ማረጋገጫ
                             const isBooked = typeof bookedSlots !== 'undefined' && bookedSlots && bookedSlots.includes(slot.value);
+                            
+                            // 2. ሰዓቱ ያለፈበት መሆኑን ማረጋገጫ 🚀
+                            let isPast = false;
+                            if (formData.appointmentDate) {
+                              const now = new Date();
+                              const slotDateTime = new Date(`${formData.appointmentDate}T${slot.value}`);
+                              // የተመረጠው ሰዓት ከአሁኑ ሰዓት በታች ከሆነ (ማለትም ካለፈ)
+                              if (slotDateTime < now) {
+                                isPast = true;
+                              }
+                            }
+
+                            // ከተያዘ ወይም ሰዓቱ ካለፈበት አይነካም (Disabled ይሆናል)
+                            const isDisabled = isBooked || isPast; 
                             const isSelected = formData.appointmentTime === slot.value;
 
                             return (
                               <button 
                                 key={slot.value} 
                                 type="button" 
-                                disabled={isBooked} 
+                                disabled={isDisabled} 
                                 onClick={() => setFormData({ ...formData, appointmentTime: slot.value })} 
                                 style={{ 
                                   width: '100%', 
@@ -1056,9 +1080,9 @@ function App() {
                                   textAlign: 'left', 
                                   fontWeight: '600', 
                                   fontSize: '0.9rem', 
-                                  cursor: isBooked ? 'not-allowed' : 'pointer', 
-                                  backgroundColor: isBooked ? '#f1f5f9' : isSelected ? '#eff6ff' : 'white', 
-                                  color: isBooked ? '#94a3b8' : isSelected ? '#2563eb' : '#334155', 
+                                  cursor: isDisabled ? 'not-allowed' : 'pointer', 
+                                  backgroundColor: isBooked ? '#fee2e2' : isPast ? '#f8fafc' : isSelected ? '#eff6ff' : 'white', 
+                                  color: isDisabled ? '#94a3b8' : isSelected ? '#2563eb' : '#334155', 
                                   display: 'flex', 
                                   alignItems: 'center', 
                                   justifyContent: 'space-between', 
@@ -1067,7 +1091,9 @@ function App() {
                               >
                                 <span>{slot.label}</span>
                                 {isBooked ? (
-                                  <span style={{ fontSize: '0.75rem', backgroundColor: '#fee2e2', color: '#ef4444', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>የተያዘ ❌</span>
+                                  <span style={{ fontSize: '0.75rem', backgroundColor: '#fca5a5', color: '#b91c1c', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>የተያዘ ❌</span>
+                                ) : isPast ? (
+                                  <span style={{ fontSize: '0.75rem', backgroundColor: '#e2e8f0', color: '#64748b', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>አልፏል ⏳</span>
                                 ) : isSelected ? (
                                   <span style={{ fontSize: '0.85rem', color: '#2563eb', fontWeight: 'bold' }}>✓</span>
                                 ) : null}

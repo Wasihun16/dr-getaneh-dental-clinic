@@ -297,7 +297,6 @@ bot.on('callback_query', async (query) => {
 
     bot.answerCallbackQuery(query.id).catch(() => {});
 });
-
 // 💬 Core Messaging Flow
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -478,23 +477,39 @@ bot.on('message', async (msg) => {
 
         const selectedDate = userStates[chatId].appointmentDate;
 
+        // 🛑 1. PERFECT PAST TIME CHECK (በጥብቅ የተሻሻለ የጊዜ ማጣሪያ) ⏳
+        let isPastTime = false;
+
+        // ሀ. የዛሬ ቀን ማረጋገጫ (Amharic & English Today Check)
         if (selectedDate === todayAmComma || selectedDate === todayAmSemicolon || selectedDate === todayEnFull) {
             if (inputMinutes <= currentTotalMinutes) {
-                let ltHour = currentHour >= 6 ? currentHour - 6 : currentHour + 18;
-                if (ltHour > 12) ltHour -= 12;
-                if (ltHour === 0) ltHour = 12;
-                const formattedMin = currentMinute < 10 ? '0' + currentMinute : currentMinute;
-                const period = currentHour >= 12 ? "ከሰዓት/ማታ" : "ጠዋት";
-
-                const pastTimeMsg = lang === 'am'
-                    ? `❌ የመረጡት ሰዓት አልፏል! አሁን ሰዓቱ ${ltHour}:${formattedMin} ${period} ሆኗል። እባክዎ የወደፊት የሰዓት ምርጫ ያስገቡ፦`
-                    : `❌ The selected time has already passed! Current local time is ${currentHour}:${formattedMin}. Please enter a future time:`;
-                
-                return bot.sendMessage(chatId, pastTimeMsg).catch(e => console.log(e.message));
+                isPastTime = true;
+            }
+        } 
+        // ለ. ለእንግሊዝኛ ምርጫ (English Date Parsing for any past date & time)
+        else if (lang === 'en') {
+            const parsedDateTime = new Date(`${selectedDate} ${standardTime}`);
+            if (!isNaN(parsedDateTime) && parsedDateTime < now) {
+                isPastTime = true;
             }
         }
 
-        // 🛡️ 🔍 የቀጠሮ መደራረብ መከላከያ ቼክ (Conflict Validation)
+        // ሰዓቱ ካለፈበት የሚሰጠው ምላሽ
+        if (isPastTime) {
+            let ltHour = currentHour >= 6 ? currentHour - 6 : currentHour + 18;
+            if (ltHour > 12) ltHour -= 12;
+            if (ltHour === 0) ltHour = 12;
+            const formattedMin = currentMinute < 10 ? '0' + currentMinute : currentMinute;
+            const period = currentHour >= 12 ? "ከሰዓት/ማታ" : "ጠዋት";
+
+            const pastTimeMsg = lang === 'am'
+                ? `❌ የመረጡት ጊዜ (ቀን ወይም ሰዓት) አልፏል! አሁን ሰዓቱ ${ltHour}:${formattedMin} ${period} ሆኗል። እባክዎ ወደፊት ያለ ትክክለኛ ሰዓት ያስገቡ፦`
+                : `❌ The selected time has already passed! Current local time is ${currentHour}:${formattedMin}. Please enter a valid future time:`;
+            
+            return bot.sendMessage(chatId, pastTimeMsg).catch(e => console.log(e.message));
+        }
+
+        // 🛑 2. PERFECT DOUBLE-BOOKING CHECK (የቀጠሮ መደራረብ የመጀመሪያ ማጣሪያ) ❌
         try {
             const [conflictSlots] = await db.query(
                 'SELECT id FROM patients WHERE TRIM(appointment_date) = ? AND TRIM(appointment_time) = ? AND reminder_sent != 2',
@@ -503,7 +518,7 @@ bot.on('message', async (msg) => {
 
             if (conflictSlots && conflictSlots.length > 0) {
                 const conflictMsg = lang === 'am'
-                    ? `❌ ይቅርታ፣ የመረጡት ሰዓት (${rawTime}) አስቀድሞ በሌላ ታካሚ ተይዟል። እባክዎ ሌላ የተለየ ሰዓት ያስገቡ👇፦`
+                    ? `❌ ይቅርታ፣ የመረጡት ሰዓት (${rawTime}) አሁን በሌላ ታካሚ ተይዟል። እባክዎ ሌላ የተለየ ሰዓት ያስገቡ👇፦`
                     : `❌ Sorry, the selected time (${rawTime}) is already booked by another patient. Please enter a different time👇:`;
                 return bot.sendMessage(chatId, conflictMsg).catch(e => console.log(e.message));
             }
@@ -540,7 +555,7 @@ bot.on('message', async (msg) => {
         if (text.includes('✅') || text.toLowerCase().includes('yes')) {
             const { fullName, age, gender, country, phoneNumber, reason, appointmentDate, appointmentTime, rawDisplayTime, mediaFileId, mediaType, rawTelegramFileId } = userStates[chatId];
             
-            // 🛑 FINAL DOUBLE-BOOKING SHIELD
+            // 🛑 3. FINAL DOUBLE-BOOKING SHIELD (የመጨረሻው ጥበቃ - Race Condition Check) ❌
             try {
                 const [raceConditionCheck] = await db.query(
                     'SELECT id FROM patients WHERE TRIM(appointment_date) = ? AND TRIM(appointment_time) = ? AND reminder_sent != 2',
