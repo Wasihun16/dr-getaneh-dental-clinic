@@ -703,29 +703,60 @@ function App() {
             </div>
           </section>
 
-          {/* SERVICES MODULE */}
+   {/* SERVICES MODULE */}
           <section id="services" className="services-section" style={{ padding: '80px 5%' }}>
             <div className="section-header" style={{ textAlign: 'center', marginBottom: '50px' }}>
-              <span className="section-tag">የምንሰጣቸው አገልግሎቶች (Our Services)</span>
-              <h2>ልዩ የጥርስ ህክምና አገልግሎቶች</h2>
-              <p style={{ color: '#64748b' }}>Comprehensive Premium Dental Care Services</p>
+              <span className="section-tag" style={{ display: 'inline-block', padding: '6px 16px', background: '#eff6ff', color: '#2563eb', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
+                የምንሰጣቸው አገልግሎቶች / Our Services
+              </span>
+              <h2 style={{ fontSize: '2.25rem', color: '#1e3a8a', marginBottom: '8px', fontWeight: '800' }}>ልዩ የጥርስ ህክምና አገልግሎቶች</h2>
+              <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: '500', margin: 0 }}>Comprehensive Premium Dental Care Services</p>
             </div>
-            <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px' }}>
-              <div className="service-card" style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+            
+            <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '25px' }}>
+              
+              {/* 1. Checkups */}
+              <div className="service-card" style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', transition: 'transform 0.2s ease' }}>
                 <Stethoscope size={32} color="#2563eb" style={{ marginBottom: '15px' }} />
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '10px', color: '#1e3a8a' }}>አጠቃላይ ምርመራ (Checkups)</h3>
-                <p style={{ color: '#475569', fontSize: '0.95rem' }}>የአፍና ጥርስ ጤና ሁኔታን በዲጂታል መሣሪያዎች በጥራት መመርመር እና ማማከር።</p>
+                <h3 style={{ fontSize: '1.3rem', marginBottom: '12px', color: '#1e3a8a', fontWeight: '700' }}>
+                  አጠቃላይ ምርመራ (General Checkups)
+                </h3>
+                <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 8px 0', fontWeight: '500' }}>
+                  የአፍና ጥርስ ጤና ሁኔታን በዲጂታል መሣሪያዎች በጥራት መመርመር እና ማማከር።
+                </p>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: '1.5', margin: 0, fontStyle: 'italic' }}>
+                  Comprehensive oral and dental health examination using advanced digital diagnostic tools and expert consultation.
+                </p>
               </div>
-              <div className="service-card" style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+
+              {/* 2. Scaling */}
+              <div className="service-card" style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', transition: 'transform 0.2s ease' }}>
                 <Sparkles size={32} color="#2563eb" style={{ marginBottom: '15px' }} />
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '10px', color: '#1e3a8a' }}>የጥርስ ማጽዳት (Scaling)</h3>
-                <p style={{ color: '#475569', fontSize: '0.95rem' }}>በተራቀቀ የአልትራሶኒክ መሣሪያ አማካኝነት የጥርስ ካልሲየምና ቆሻሻዎችን ማስወገድ።</p>
+                <h3 style={{ fontSize: '1.3rem', marginBottom: '12px', color: '#1e3a8a', fontWeight: '700' }}>
+                  የጥርስ ማጽዳት (Scaling & Polishing)
+                </h3>
+                <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 8px 0', fontWeight: '500' }}>
+                  በተራቀቀ የአልትራሶኒክ መሣሪያ አማካኝነት የጥርስ ካልሲየምና ቆሻሻዎችን ማስወገድ።
+                </p>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: '1.5', margin: 0, fontStyle: 'italic' }}>
+                  Removal of dental plaque, tartar, and surface stains using advanced ultrasonic scaling technology.
+                </p>
               </div>
-              <div className="service-card" style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+
+              {/* 3. Root Canal */}
+              <div className="service-card" style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', transition: 'transform 0.2s ease' }}>
                 <HeartPulse size={32} color="#2563eb" style={{ marginBottom: '15px' }} />
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '10px', color: '#1e3a8a' }}>የነርቭ ህክምና (Root Canal)</h3>
-                <p style={{ color: '#475569', fontSize: '0.95rem' }}>የተጎዱ ወይም ህመም ያላቸውን ጥርሶች ነርቭ በማከም ጥርስ እንዳይነቀል ማዳን።</p>
+                <h3 style={{ fontSize: '1.3rem', marginBottom: '12px', color: '#1e3a8a', fontWeight: '700' }}>
+                  የነርቭ ህክምና (Root Canal Therapy)
+                </h3>
+                <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: '1.6', margin: '0 0 8px 0', fontWeight: '500' }}>
+                  የተጎዱ ወይም ህመም ያላቸውን ጥርሶች ነርቭ በማከም ጥርስ እንዳይነቀል ማዳን።
+                </p>
+                <p style={{ color: '#64748b', fontSize: '0.85rem', lineHeight: '1.5', margin: 0, fontStyle: 'italic' }}>
+                  Treating infected or painful tooth nerves effectively to save your natural teeth from extraction.
+                </p>
               </div>
+
             </div>
           </section>
 
