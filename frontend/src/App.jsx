@@ -726,36 +726,80 @@ function App() {
               </div>
             </div>
           </section>
-
-          {/* ABOUT MODULE */}
-          <section id="about" className="about-section">
+{/* ABOUT MODULE */}
+          <section id="about" className="about-section" style={{ padding: '80px 0' }}>
             <div className="about-container">
               <div className="about-text">
-                <span className="section-tag">ስለ ክሊኒካችን (About Us)</span>
-                <h3>እጅግ ዘመናዊ የህክምና መሣሪያዎችና የክህሎት ጥምረት <br/> <span style={{fontSize: '1.2rem', color: '#475569'}}>Advanced Medical Equipment meets Expert Skill</span></h3>
-                <p>ዶ/ር ጌታነህ የጥርስ ልዩ ህክምና ክሊኒክ ለረጅም ዓመታት ጥራት ያለውና አስተማማኝ የአፍና ጥርስ ህክምና አገልግሎት ሲሰጥ የቆየ ግንባር ቀደም ተቋም ነው። እያንዳንዱ ህክምና የሚሰጠው በዘመናዊ ቴክኖሎጂ እና በከፍተኛ ባለሙያዎች ነው።</p>
-                <p style={{ marginTop: '10px', color: '#475569' }}><i>Dr. Getaneh Specialty Dental Clinic is a leading institution that has been providing high-quality and reliable oral and dental care for many years. Every treatment is delivered using modern technology and by highly skilled professionals.</i></p>
-                <div className="about-mini-grids">
-                  <div className="mini-box"><strong>99%</strong><p>የታካሚዎች እርካታ <br/> (Patient Satisfaction)</p></div>
-                  <div className="mini-box"><strong>24/7</strong><p>ፈጣን ቀጠሮ <br/> (Quick Booking)</p></div>
+                
+                {/* 1. ንዑስ ርዕስ (የተስተካከለ መጠን) */}
+                <span className="section-tag" style={{ fontSize: '2rem', fontWeight: 'bold', display: 'inline-block', marginBottom: '15px', color: '#2563eb' }}>
+                  ስለ ክሊኒካችን (About Us)
+                </span>
+
+  
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginTop: '0px', marginBottom: '20px', color: '#0f172a', lineHeight: '1.2' }}>
+                  እጅግ ዘመናዊ የህክምና መሣሪያዎችና የክህሎት ጥምረት 
+                  <br /> 
+                  <span style={{ fontSize: '1.5rem', color: '#475569', fontWeight: 'normal', display: 'inline-block', marginTop: '10px' }}>
+                    Advanced Medical Equipment meets Expert Skill
+                  </span>
+                </h2>
+
+                <p style={{ fontSize: '1.25rem', lineHeight: '1.8', marginBottom: '15px', color: '#334155' }}>
+                  ዶ/ር ጌታነህ የጥርስ ልዩ ህክምና ክሊኒክ ለረጅም ዓመታት ጥራት ያለውና አስተማማኝ የአፍና ጥርስ ህክምና አገልግሎት ሲሰጥ የቆየ ግንባር ቀደም ተቋም ነው። እያንዳንዱ ህክምና የሚሰጠው በዘመናዊ ቴክኖሎጂ እና በከፍተኛ ባለሙያዎች ነው።
+                </p>
+
+                <p style={{ fontSize: '1.15rem', lineHeight: '1.8', color: '#475569', marginBottom: '35px' }}>
+                  <i>Dr. Getaneh Specialty Dental Clinic is a leading institution that has been providing high-quality and reliable oral and dental care for many years. Every treatment is delivered using modern technology and by highly skilled professionals.</i>
+                </p>
+
+                <div className="about-mini-grids" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                  
+         
+                  <div className="mini-box" style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <strong style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '5px' }}>99%</strong>
+                    <p style={{ fontSize: '1.05rem', margin: 0, fontWeight: '500', color: '#1e293b' }}>የታካሚዎች እርካታ <br/><span style={{ fontSize: '0.9rem', color: '#64748b' }}>(Patient Satisfaction)</span></p>
+                  </div>
+
+      
+                  <div className="mini-box" style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <strong style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '5px' }}>24/7</strong>
+                    <p style={{ fontSize: '1.05rem', margin: 0, fontWeight: '500', color: '#1e293b' }}>ፈጣን ቀጠሮ <br/><span style={{ fontSize: '0.9rem', color: '#64748b' }}>(Quick Booking)</span></p>
+                  </div>
+
+                  <div className="mini-box" style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <strong style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '5px' }}>15+</strong>
+                    <p style={{ fontSize: '1.05rem', margin: 0, fontWeight: '500', color: '#1e293b' }}>የዓመታት ልምድ <br/><span style={{ fontSize: '0.9rem', color: '#64748b' }}>(Years Experience)</span></p>
+                  </div>
+
+               
+                  <div className="mini-box" style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <strong style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '5px' }}>6+</strong>
+                    <p style={{ fontSize: '1.05rem', margin: 0, fontWeight: '500', color: '#1e293b' }}>ዋና አገልግሎቶች <br/><span style={{ fontSize: '0.9rem', color: '#64748b' }}>(Expert Services)</span></p>
+                  </div>
+
                 </div>
               </div>
+
+              {/* የምስል ክፍል */}
               <div className="about-graphic-wrapper">
                 <img src={dentalScanImg} alt="Dental Tech" className="about-real-image" />
               </div>
             </div>
           </section>
-
    {/* SERVICES MODULE */}
-          <section id="services" className="services-section" style={{ padding: '80px 5%' }}>
-            <div className="section-header" style={{ textAlign: 'center', marginBottom: '50px' }}>
-              <span className="section-tag" style={{ display: 'inline-block', padding: '6px 16px', background: '#eff6ff', color: '#2563eb', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px' }}>
-                የምንሰጣቸው አገልግሎቶች / Our Services
-              </span>
-              <h2 style={{ fontSize: '2.25rem', color: '#1e3a8a', marginBottom: '8px', fontWeight: '800' }}>ልዩ የጥርስ ህክምና አገልግሎቶች</h2>
-              <p style={{ color: '#64748b', fontSize: '1.1rem', fontWeight: '500', margin: 0 }}>Comprehensive Premium Dental Care Services</p>
-            </div>
-            
+          <section id="services" className="services-section" style={{ padding: '100px 5%' }}>
+  <div className="section-header" style={{ textAlign: 'center', marginBottom: '60px' }}>
+    <span className="section-tag" style={{ display: 'inline-block', padding: '10px 24px', background: '#eff6ff', color: '#2563eb', borderRadius: '20px', fontSize: '2rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '20px' }}>
+      የምንሰጣቸው አገልግሎቶች / Our Services
+    </span>
+    <h2 style={{ fontSize: '1.5rem', color: '#1e3a8a', marginBottom: '15px', fontWeight: '805', lineHeight: '1.2' }}>
+      ልዩ የጥርስ ህክምና አገልግሎቶች
+    </h2>
+    <p style={{ color: '#64748b', fontSize: '1.5rem', fontWeight: '500', margin: 0 }}>
+      Comprehensive Premium Dental Care Services
+    </p>
+  </div>
             <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '25px' }}>
               
               {/* 1. Checkups */}
@@ -850,12 +894,18 @@ function App() {
           </section>
 
           {/* TEAM MODULE */}
-          <section id="team" className="team-section" style={{ padding: '80px 5%' }}>
-            <div className="section-header" style={{ textAlign: 'center', marginBottom: '50px' }}>
-              <span className="section-tag">ባለሙያዎቻችን (Our Medical Team)</span>
-              <h2>ከፍተኛ ክሊኒካዊ ልምድ ያላቸው ስፔሻሊስቶች</h2>
-              <p style={{ color: '#64748b' }}>Meet Our Elite Licensed Dental Doctors</p>
-            </div>
+          <section id="team" className="team-section" style={{ padding: '100px 5%' }}>
+  <div className="section-header" style={{ textAlign: 'center', marginBottom: '60px' }}>
+    <span className="section-tag" style={{ display: 'inline-block', padding: '10px 24px', background: '#f8fafc', color: '#2563eb', borderRadius: '20px', fontSize: '2rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+      ባለሙያዎቻችን (Our Medical Team)
+    </span>
+    <h2 style={{ fontSize: '1.5rem', color: '#1e3a8a', marginBottom: '15px', fontWeight: '800', lineHeight: '1.2' }}>
+      ከፍተኛ ክሊኒካዊ ልምድ ያላቸው ስፔሻሊስቶች
+    </h2>
+    <p style={{ color: '#64748b', fontSize: '1.5rem', fontWeight: '500', margin: 0 }}>
+      Meet Our Elite Licensed Dental Doctors
+    </p>
+  </div>
             <div className="team-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '30px' }}>
               <div className="team-card" style={{ textAlign: 'center', background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
                 <img src={drGetanehImg} alt="Dr. Getaneh" style={{ width: '130px', height: '130px', borderRadius: '50%', objectFit: 'cover', marginBottom: '15px', border: '3px solid #2563eb' }} />
