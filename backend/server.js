@@ -6,13 +6,15 @@ const fs = require('fs');
 require('dotenv').config();
 const db = require('./config/db'); 
 
-// 🔗 1. የቦት እና የማስታወሻ ፋይሎችን መጥራት (የተስተካከለ 🔒)
-let bot = null;
-let startReminderService = null;
+// 🔗 1. የቦት እና የማስታወሻ ፋይሎችን መጥራት (ያለ ምንም ክልከላ በሁሉም ቦታ እንዲሠራ 🚀)
+const bot = require('./bot/telegramBot');
+const { startReminderService } = require('./services/reminderService');
 
-if (process.env.NODE_ENV === 'production') {
-    bot = require('./bot/telegramBot');
-    startReminderService = require('./services/reminderService').startReminderService;
+// 🔄 ሎካል ላይ ሲሞከር ከ Render Webhook ጋር እንዳይጋጭ መስመሩን ማጽዳት
+if (bot && typeof bot.deleteWebHook === 'function') {
+    bot.deleteWebHook()
+        .then(() => console.log('🤖 Telegram Bot: Old Webhook cleared. Ready for incoming updates!'))
+        .catch(err => console.error('❌ Telegram Bot Webhook Error:', err.message));
 }
 
 const app = express();
@@ -59,9 +61,7 @@ const upload = multer({ storage: storage });
 // 🔔 2. የማስታወሻ ሲስተሙን ማስነሳት
 if (bot && startReminderService) {
     startReminderService(bot);
-    console.log('🔔 የማስታወሻ ሲስተም (Telegram-Only Reminder) በ Render ላይ በጀርባ መሥራት ጀምሯል...');
-} else {
-    console.log('ℹ️ Local Environment ተገኝቷል፦ በኮምፒውተር ላይ የቴሌግራም ቦት እንዳይጋጭ ሙሉ በሙሉ ታግዷል።');
+    console.log('🔔 የማስታወሻ ሲስተም (Telegram-Only Reminder) እና ቦት በተሳካ ሁኔታ ሥራ ጀምረዋል...');
 }
 
 // ዳታቤዙ መገናኘቱን መሞከሪያ እና ሰንጠረዥ መፍጠሪያ

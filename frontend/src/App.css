@@ -13,8 +13,8 @@
   /* Clinic Identity Brand Colors */
   --brand-primary: #1d3557;  
   --brand-primary-hover: #152844;
-  --brand-red: #e63946;      
-  --brand-red-hover: #d32f2f;
+  --brand-red: #ca3030;      
+  --brand-red-hover:#f10014d5 ;
   
   /* Interface Accents */
   --brand-secondary: #e0f2fe;
@@ -90,9 +90,9 @@ body {
    📅 CLINIC WORKING HOURS TOP BANNER (Updated 🚀)
    ========================================================================== */
 .emergency-top-bar {
-  background-color: var(--brand-red-hover);
-  color: white;
-  padding: 8px 5%;
+  background-color: #f8f9fa;
+  color: #333;
+  padding: 3px 5%;
   text-align: center;
   font-size: 0.9rem;
   font-weight: 500;

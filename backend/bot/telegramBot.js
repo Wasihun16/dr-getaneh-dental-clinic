@@ -10,13 +10,17 @@ const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatId = process.env.ADMIN_CHAT_ID; 
 const bot = new TelegramBot(token, { polling: true });
 
-const userStates = {};
+// 🔄 የቀድሞውን Webhook አጥፍቶ ሎካል ፖሊንግ እንዲጀምር ማድረግ
+bot.deleteWebHook().then(() => {
+    console.log('🔄 Old Webhook cleared. Polling started locally!');
+}).catch(err => console.error('❌ Webhook error:', err.message));
 
+const userStates = {};
 const amharicMonths = ['መስከረም', 'ጥቅምት', 'ህዳር', 'ታህሳስ', 'ጥር', 'የካቲት', 'መጋቢት', 'ሚያዝያ', 'ግንቦት', 'ሰኔ', 'ሐምሌ', 'ነሐሴ', 'ጳጉሜ'];
 const englishMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // ========================================================
-// 📥 ፈንክሽን፦ ፋይሎችን ከቴሌግራም ሰርቨር ወደ ኮምፒውተር ማውረጃ
+// 📥 UTILITY: Download files from Telegram Servers locally
 // ========================================================
 async function downloadTelegramFile(fileId, customFileName) {
     try {
@@ -41,7 +45,7 @@ async function downloadTelegramFile(fileId, customFileName) {
                 response.pipe(fileStream);
                 fileStream.on('finish', () => {
                     fileStream.close();
-                    console.log(`💾 ፋይሉ በተሳካ ሁኔታ ወርዷል፦ ${finalFileName}`);
+                    console.log(`💾 File downloaded successfully: ${finalFileName}`);
                     resolve(finalFileName); 
                 });
             }).on('error', (err) => {
@@ -50,14 +54,14 @@ async function downloadTelegramFile(fileId, customFileName) {
             });
         });
     } catch (error) {
-        console.error("❌ ፋይሉን ከቴሌግራም ማውረድ አልተቻለም፦", error.message);
+        console.error("❌ Failed to download file from Telegram:", error.message);
         return null;
     }
 }
 
-// ==========================================
-// የሰዓት ፎርማት መቀየሪያ ፈንክሽን (ወደ ደቂቃ)
-// ==========================================
+// ========================================================
+// 🕒 UTILITY: Convert localized time inputs to absolute minutes
+// ========================================================
 function getEATMinutes(timeStr) {
     if (!timeStr) return null;
     timeStr = timeStr.toLowerCase().trim();
@@ -89,7 +93,7 @@ function getEATMinutes(timeStr) {
 }
 
 // ========================================================
-// የሰዓት መለወጫ ወደ መደበኛ ፈንክሽን (ወደ ፈረንጂ 24-ሰዓት HH:MM)
+// 🕒 UTILITY: Standardize time representation to standard 24H (HH:MM)
 // ========================================================
 function convertToStandard24Hour(timeStr) {
     const totalMinutes = getEATMinutes(timeStr);
@@ -104,7 +108,7 @@ function convertToStandard24Hour(timeStr) {
     return `${formattedHours}:${formattedMinutes}`; 
 }
 
-// 🔘 Official Bot Menu Commands
+// 🔘 Configure Global Application Menu Commands
 bot.setMyCommands([
     { command: '/start', description: 'ዋና ገጽ / Main Menu' },
     { command: '/info', description: 'አድራሻ እና መገኛ/ Clinic Address' },
@@ -112,7 +116,7 @@ bot.setMyCommands([
     { command: '/cancel', description: 'ያቋርጡ / Cancel Process' }
 ]);
 
-// 🛠️ Database Schema Auto-Verification
+// 🛠️ Database Schema Upgrades Configuration Shield
 (async () => {
     const columnsToAdd = [
         "chat_id VARCHAR(255)", "reminder_sent INT DEFAULT 0", "age VARCHAR(10)", 
@@ -124,10 +128,10 @@ bot.setMyCommands([
     for (let col of columnsToAdd) {
         try { await db.query(`ALTER TABLE patients ADD COLUMN ${col}`); } catch (e) {}
     }
-    console.log('✅ Professional database columns verified successfully.');
+    console.log('✅ Production database engine column schemas verified.');
 })();
 
-// 🚀 /start Command
+// 🚀 Core Command Route Hooks: /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     delete userStates[chatId]; 
@@ -137,23 +141,37 @@ bot.onText(/\/start/, (msg) => {
 ✨ *Dr. Getaneh Specialty Dental Clinic* ✨
 ━━━━━━━━━━━━━━━━━━━━
 
+🚨 *የጥርስ ሕመም አላስተኛ፣ አላስቀመጥ፣ አላሰራ ብሎዎታል?* 🦷 *ጥርስዎ ተቦርቡሯል? ወይስ ይጠዘጥዘዎታል?*
+የጥርስ ቁርጥማትስ አስቸግሮዎታል? እንግዲያውስ ወደ ዶ/ር ጌታነህ የጥርስ ልዩ ህክምና ክሊኒክ ይምጡ!
+
+⚠️ *Has a toothache kept you from sleeping, sitting, or working?*
+🦷 *Is your tooth decayed, or are you experiencing throbbing pain?*
+Are you suffering from tooth sensitivity or aching? Then welcome to Dr. Getaneh Specialty Dental Clinic!
+━━━━━━━━━━━━━━━━━━━━
+
 👋 እንኳን በደህና መጡ! | Welcome!
 
-እባክዎ ቋንቋ ይምረጡ 👇
-Please select your language 👇
+እባክዎ ከታች ካሉት አማራጮች አንዱን ይምረጡ 👇
+Please select one of the options below 👇
     `;
     
     bot.sendMessage(chatId, welcomeMessage, {
         parse_mode: 'Markdown',
         reply_markup: {
             inline_keyboard: [
-                [{ text: '🇪🇹 አማርኛ', callback_data: 'lang_am' }, { text: '🇬🇧 English', callback_data: 'lang_en' }]
+                [
+                    { text: '🇪🇹 አማርኛ', callback_data: 'lang_am' }, 
+                    { text: '🇬🇧 English', callback_data: 'lang_en' }
+                ],
+                [
+                    { text: '🌐 ዌብሳይት / Visit Website', url: 'https://dr-getaneh-specialty-dental-clinic.onrender.com' }
+                ]
             ]
         }
     }).catch(e => console.log(e.message));
 });
 
-// 🏢 /info Command
+// 🏢 Core Command Route Hooks: /info
 bot.onText(/\/info/, (msg) => {
     const chatId = msg.chat.id;
     const infoText = `
@@ -170,12 +188,12 @@ bot.onText(/\/info/, (msg) => {
 📍 *Address (English):*
 5 Kilo, Addis Ababa, In front of the National Museum, below Radical School (Near St. Mariam Church)
 ━━━━━━━━━━━━━━━━━━━━
-🗺️ [📍 የጉግል ማፕ አቅጣጫ / Google Maps](https://maps.google.com)
+🗺️ [📍 የጉግል ማፕ አቅጣጫ / Google Maps](http://maps.google.com/?q=National+Museum+of+Ethiopia)
     `; 
     bot.sendMessage(chatId, infoText, { parse_mode: 'Markdown', disable_web_page_preview: false }).catch(e => console.log(e.message));
 });
 
-// 🔍 /status Command
+// 🔍 Core Command Route Hooks: /status
 bot.onText(/\/status/, async (msg) => {
     const chatId = msg.chat.id;
     try {
@@ -209,18 +227,44 @@ bot.onText(/\/status/, async (msg) => {
     }
 });
 
-// 🚫 /cancel Command
-bot.onText(/\/cancel/, (msg) => {
+// 🚫 Core Command Route Hooks: /cancel
+bot.onText(/\/cancel/, async (msg) => {
     const chatId = msg.chat.id;
+
+    // 1. ተጠቃሚው በምዝገባ ሂደት ላይ ከሆነ ሂደቱን ለማቋረጥ
     if (userStates[chatId]) {
         const lang = userStates[chatId].lang || 'am';
         delete userStates[chatId];
-        const reply = lang === 'am' ? `🚫 ሂደቱ ተቋርጧል። አዲስ ለመጀመር /start ይበሉ።` : `🚫 Process cancelled. Type /start to begin again.`;
-        bot.sendMessage(chatId, reply, { reply_markup: { remove_keyboard: true } }).catch(e => console.log(e.message));
+        const reply = lang === 'am' 
+            ? `🚫 ሂደቱ ተቋርጧል። አዲስ ለመጀመር /start ይበሉ።` 
+            : `🚫 Process cancelled. Type /start to begin again.`;
+        return bot.sendMessage(chatId, reply, { reply_markup: { remove_keyboard: true } }).catch(e => console.log(e.message));
+    }
+
+    // 2. ተጠቃሚው ምዝገባ ጨርሶ የተያዘ ቀጠሮ ካለው፣ ያንን ቀጠሮ ከዳታቤዝ ላይ ለመሰረዝ
+    try {
+        // በመጠባበቅ ላይ ያለ (ያላለፈ) ቀጠሮ እንዳለው ፈልግ
+        const [rows] = await db.query(`SELECT * FROM patients WHERE chat_id = ? AND reminder_sent != 2 ORDER BY id DESC LIMIT 1`, [chatId]);
+        
+        if (rows && rows.length > 0) {
+            // ቀጠሮውን Cancelled (2) አድርገው
+            await db.query(`UPDATE patients SET reminder_sent = 2 WHERE id = ?`, [rows[0].id]);
+            const cancelReply = `🚫 *ቀጠሮዎ በተሳካ ሁኔታ ተሰርዟል!*\nአዲስ ለመያዝ /start ይበሉ።\n\n🚫 *Your appointment has been successfully cancelled!*\nType /start to book a new one.`;
+            return bot.sendMessage(chatId, cancelReply, { parse_mode: 'Markdown' }).catch(e => console.log(e.message));
+        } else {
+            // ምንም ቀጠሮም ሆነ የምዝገባ ሂደት ከሌለው
+            const noActiveReply = `⚠️ የሚቋረጥ ሂደት ወይም የተመዘገበ ቀጠሮ የለዎትም።\n⚠️ You don't have any active process or appointment to cancel.`;
+            return bot.sendMessage(chatId, noActiveReply).catch(e => console.log(e.message));
+        }
+    } catch (error) {
+        console.error("Cancel command error:", error.message);
+        bot.sendMessage(chatId, `⚠️ አሁን ላይ ምንም የሚቋረጥ ሂደት የለም። ዋና ማውጫ ለመመለስ /start ይበሉ።\n⚠️ No active process to cancel. Type /start.`).catch(e => console.log(e.message));
     }
 });
 
-// 🖱️ Buttons Callback Actions
+// ========================================================
+// 🖱️ INLINE KEYBOARD ACTIONS INTERCEPTOR (CALLBACK QUERY)
+// ========================================================
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const data = query.data;
@@ -287,7 +331,7 @@ bot.on('callback_query', async (query) => {
             ? `${tempMonth} ${tempDay}፤ ${selectedYear}`
             : `${tempMonth} ${tempDay}, ${selectedYear}`;
 
-        // 🛑 🚀 NEW DATE-ONLY VALIDATION 🚀 🛑
+        // 🛑 BULLETPROOF CHRONOLOGICAL BACKDATE VERIFICATION ENGINE
         const now = new Date();
         const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
         const currEnYear = eatNow.getUTCFullYear();
@@ -340,7 +384,7 @@ bot.on('callback_query', async (query) => {
             }
         }
 
-        // 🛑 ቀኑ ካለፈ (Past Date)
+        // 🛑 Intercept backdated appointments and gracefully re-route selection
         if (isPastDate) {
             const errorMsg = lang === 'am' 
                 ? `❌ ይቅርታ፣ የመረጡት ቀን (${appointmentDate}) አስቀድሞ አልፏል!\n\nእባክዎ ትክክለኛ እና ወደፊት ያለ ቀን ይምረጡ 👇`
@@ -363,7 +407,6 @@ bot.on('callback_query', async (query) => {
             return;
         }
 
-        // ✅ ቀኑ ትክክል ከሆነ (ዛሬ ወይም ወደፊት ከሆነ)
         userStates[chatId].appointmentDate = appointmentDate;
         userStates[chatId].isToday = isToday; 
         userStates[chatId].step = 'WAITING_FOR_TIME';
@@ -377,7 +420,9 @@ bot.on('callback_query', async (query) => {
     bot.answerCallbackQuery(query.id).catch(() => {});
 });
 
-// 💬 Core Messaging Flow
+// ========================================================
+// 💬 CONTEXTUAL PATIENT CONVERSATION FLOW ENGINE
+// ========================================================
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text || ''; 
@@ -475,7 +520,7 @@ bot.on('message', async (msg) => {
             
         bot.sendMessage(chatId, prompt, { parse_mode: 'Markdown', reply_markup: { keyboard, resize_keyboard: true, one_time_keyboard: true } }).catch(e => console.log(e.message));
     }
-
+    
     else if (currentState === 'WAITING_FOR_MEDIA') {
         let hasMedia = false;
         let fileId = null;
@@ -528,7 +573,9 @@ bot.on('message', async (msg) => {
             const prompt = lang === 'am' ? `📅 እባክዎ የሚመጡበትን ወር ይምረጡ 👇` : `📅 Please select your preferred Month 👇`;
             bot.sendMessage(chatId, prompt, { reply_markup: { inline_keyboard: monthButtons } }).catch(e => console.log(e.message));
         }).catch(e => console.log(e.message));
-    }else if (currentState === 'WAITING_FOR_TIME') {
+    }
+    
+    else if (currentState === 'WAITING_FOR_TIME') {
         let timeInput = text.trim().toLowerCase();
         
         // 🚀 AUTO-SANITIZE REDUNDANT 24H + AM/PM FORMATS
@@ -559,7 +606,6 @@ bot.on('message', async (msg) => {
         }
 
         // 🚀 DYNAMIC BULLETPROOF "IS TODAY" CHECK
-        // የተመረጠው ቀን ዛሬ መሆኑን ከታች ባለው ቀመር ራሱ ያረጋግጣል (በስቴት ቫሪያብል ላይ አይመሰረትም)
         const now = new Date();
         const amharicDateStr = new Intl.DateTimeFormat('am-ET', { timeZone: "Africa/Addis_Ababa", calendar: 'ethiopic', month: 'long', day: 'numeric' }).format(now);
         const englishDateStr = now.toLocaleDateString('en-US', { timeZone: "Africa/Addis_Ababa", month: 'long', day: 'numeric' });
@@ -573,7 +619,7 @@ bot.on('message', async (msg) => {
         const selectedDate = String(userStates[chatId].appointmentDate).trim();
         const isActuallyToday = (selectedDate === todayAmComma || selectedDate === todayAmSemicolon || selectedDate === todayEnFull);
 
-        // 🛑 2. PAST TIME TODAY CHECK ⏳ (ቀጠሮው ለዛሬ ከሆነ ብቻ ነው የሚመረምረው)
+        // 🛑 2. PAST TIME TODAY CHECK ⏳
         if (isActuallyToday) {
             const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
             const currentTotalMinutes = (eatNow.getUTCHours() * 60) + eatNow.getUTCMinutes();
@@ -650,7 +696,7 @@ bot.on('message', async (msg) => {
                     const blockMsg = lang === 'am'
                         ? `⚠️ *ይቅርታ፣ ይህ ሰዓት አሁን ከጥቂት ሰከንዶች በፊት በሌላ ታካሚ ተይዟል!* እባክዎ /start ብለው አዲስ ሰዓት በድጋሚ ይምረጡ።`
                         : `⚠️ *Sorry, this time slot was just booked by another patient a few seconds ago!* Please type /start to choose another time.`;
-                    return bot.sendMessage(chatId, blockMsg, { reply_keyboard: true, reply_markup: { remove_keyboard: true } }).catch(e => console.log(e.message));
+                    return bot.sendMessage(chatId, blockMsg, { reply_markup: { remove_keyboard: true } }).catch(e => console.log(e.message));
                 }
 
                 const ticketId = 'DG-' + Math.floor(1000 + Math.random() * 9000); 
@@ -661,8 +707,8 @@ bot.on('message', async (msg) => {
                 delete userStates[chatId]; 
                 
                 const successMsg = lang === 'am'
-                    ? `✅ *ቀጠሮዎ በተሳካ ሁኔታ ተረጋግጧል!*\n\n🎫 *የቀጠሮ መለያ (Ticket ID):* \`${ticketId}\`\n\n👤 *ስም:* ${fullName}\n📅 *ቀን:* ${appointmentDate}\n⏰ *ሰዓት:* ${rawDisplayTime}\n━━━━━━━━━━━━━━━━━━━━\n💬 *ማሳሰቢያ፦* ከተያዘልዎ የቀጠሮ ሰዓት አስቀድሞ የማስታወሻ መልእክት በዚሁ ቦት በኩል ይላክልዎታል።\n━━━━━━━━━━━━━━━━━━━━\n📞 *ለበለጠ መረጃ ደውሉ:* \`0985952016\`\n📍 *አድራሻ:* 5 ኪሎ፤ ከብሔራዊ ሙዚየም ፊት ለፊት\n🗺️ [የጉግል ማፕ አቅጣጫ ለመክፈት እዚህ ይጫኑ](http://maps.google.com/?q=5+Kilo+National+Museum+Addis+Ababa)\n\n🙏 ክሊኒክ ሲመጡ ይህንን መለያ ቁጥር (\`${ticketId}\`) ያሳዩ። ቀጠሮዎን ለማየት በማንኛውም ጊዜ /status ብለው ይጫኑ!`
-                    : `✅ *Appointment Confirmed!*\n\n🎫 *Ticket ID:* \`${ticketId}\`\n\n👤 *Name:* ${fullName}\n📅 *Date:* ${appointmentDate}\n⏰ *Time:* ${rawDisplayTime}\n━━━━━━━━━━━━━━━━━━━━\n💬 *Note:* A reminder message will be sent to you via this bot before your appointment time.\n━━━━━━━━━━━━━━━━━━━━\n📞 *Call for info:* \`0985952016\`\n📍 *Address:* 5 Kilo, In front of National Museum\n🗺️ [Click here for Google Maps](http://maps.google.com/?q=5+Kilo+National+Museum+Addis+Ababa)\n\n🙏 Present this Ticket ID (\`${ticketId}\`) upon arrival. Type /status anytime to check your appointment!`;
+                    ? `✅ *ቀጠሮዎ በተሳካ ሁኔታ ተረጋግጧል!*\n\n🎫 *የቀጠሮ መለያ (Ticket ID):* \`${ticketId}\`\n\n👤 *ስም:* ${fullName}\n📅 *ቀን:* ${appointmentDate}\n⏰ *ሰዓት:* ${rawDisplayTime}\n━━━━━━━━━━━━━━━━━━━━\n💬 *ማሳሰቢያ፦* ከተያዘልዎ የቀጠሮ ሰዓት አስቀድሞ የማስታወሻ መልእክት በዚሁ ቦት በኩል ይላክልዎታል።\n━━━━━━━━━━━━━━━━━━━━\n📞 *ለበለጠ መረጃ ደውሉ:* \`0985952016\`\n📍 *አድራሻ:* 5 ኪሎ፤ ከብሔራዊ ሙዚየም ፊት ለፊት\n🗺️ [የጉግል ማፕ አቅጣጫ ለመክፈት እዚህ ይጫኑ](http://maps.google.com/?q=National+Museum+of+Ethiopia)\n\n🙏 ክሊኒክ ሲመጡ ይህንን መለያ ቁጥር (\`${ticketId}\`) ያሳዩ። ቀጠሮዎን ለማየት በማንኛውም ጊዜ /status ብለው ይጫኑ!`
+                    : `✅ *Appointment Confirmed!*\n\n🎫 *Ticket ID:* \`${ticketId}\`\n\n👤 *Name:* ${fullName}\n📅 *Date:* ${appointmentDate}\n⏰ *Time:* ${rawDisplayTime}\n━━━━━━━━━━━━━━━━━━━━\n💬 *Note:* A reminder message will be sent to you via this bot before your appointment time.\n━━━━━━━━━━━━━━━━━━━━\n📞 *Call for info:* \`0985952016\`\n📍 *Address:* 5 Kilo, In front of National Museum\n🗺️ [Click here for Google Maps](http://maps.google.com/?q=National+Museum+of+Ethiopia)\n\n🙏 Present this Ticket ID (\`${ticketId}\`) upon arrival. Type /status anytime to check your appointment!`;
                 
                 bot.sendMessage(chatId, successMsg, { parse_mode: 'Markdown', reply_markup: { remove_keyboard: true }, disable_web_page_preview: false }).catch(e => console.log(e.message));
 
@@ -683,8 +729,10 @@ bot.on('message', async (msg) => {
             }
         }
     }
+});
+
 // ========================================================
-// 3. የጀርባ ክሮን ሲስተም (የቴሌግራም ብቻ ማስታወሻ እና መሰረዣ)
+// 🔄 AUTOMATED BACKGROUND ENGINE (CRON REMINDERS & EXPIRATIONS)
 // ========================================================
 cron.schedule('* * * * *', async () => {
     try {
@@ -704,7 +752,7 @@ cron.schedule('* * * * *', async () => {
         const todayAmSemicolon = `${amharicDateStr}፤ ${currentYearAm}`.replace(/\s+/g, ' ').trim();
         const todayEnFull = `${englishDateStr}, ${currentYearEn}`.replace(/\s+/g, ' ').trim();
 
-        // 🔍 ሀ. ማስታወሻ መላክ
+        // 🔍 ENGINE PART A: 120-Minute Upcoming Appointment Reminders
         const [upcomingPatients] = await db.query(
             'SELECT * FROM patients WHERE chat_id IS NOT NULL AND (appointment_date = ? OR appointment_date = ? OR appointment_date = ?) AND reminder_sent = 0', 
             [todayAmComma, todayAmSemicolon, todayEnFull]
@@ -752,7 +800,7 @@ cron.schedule('* * * * *', async () => {
             }
         }
 
-        // 🔍 ለ. 20 ደቂቃ ሲያረፍዱ ቀጠሮ መሰረዝ
+        // 🔍 ENGINE PART B: 20-Minute Lateness Expiration Cancellation Loop
         const [activePatients] = await db.query(
             'SELECT * FROM patients WHERE chat_id IS NOT NULL AND (appointment_date = ? OR appointment_date = ? OR appointment_date = ?) AND reminder_sent = 1', 
             [todayAmComma, todayAmSemicolon, todayEnFull]
@@ -779,11 +827,10 @@ cron.schedule('* * * * *', async () => {
             }
         }
     } catch (error) {
-        console.error("❌ ክሮን ስራ ላይ ስህተት ተከስቷል፦", error.message);
+        console.error("❌ Error encountered in running Cron scheduling context:", error.message);
     }
 });
 
-console.log('🏁 የቦት ሲስተም እና የቴሌግራም ክሮን ጃብ በተሳካ ሁኔታ ተነስተዋል...');
+console.log('🏁 Telegram Application Engine and Cron Services initialized successfully...');
 
 module.exports = bot;
-});

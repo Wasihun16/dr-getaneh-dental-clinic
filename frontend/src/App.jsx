@@ -332,6 +332,8 @@ function App() {
       document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
     }, 50);
   };
+// 🚨 ለመንቀሳቀሻነት የተዘጋጀው የተሟላ የማስታወቂያ ፅሁፍ
+  const promoText = `🚨 የጥርስ ሕመም አላስተኛ፣ አላስቀመጥ፣ አላሰራ ብሎዎታል? 🦷 ጥርስዎ ተቦርቡሯል? ወይስ ይጠዘጥዘዎታል? የጥርስ ቁርጥማትስ አስቸግሮዎታል? እንግዲያውስ ወደ ዶ/ር ጌታነህ የጥርስ ልዩ ህክምና ክሊኒክ ይምጡ!  •  ⚠️ Has a toothache kept you from sleeping, sitting, or working? 🦷 Is your tooth decayed, or are you experiencing throbbing pain? Are you suffering from tooth sensitivity or aching? Then welcome to Dr. Getaneh Specialty Dental Clinic!`;
 
   return (
     <div className="app-container">
@@ -345,6 +347,16 @@ function App() {
               <strong>(የስራ ቀናት፦ ከሰኞ - ቅዳሜ)   🕒 የስራ ሰዓት፡(ከጠዋቱ 2:30 እስከ ምሽቱ 12:30 ) | Working Hours: Mon - Sat (8:30 AM - 6:30 PM):</strong> 
               {" "}ይደውሉልን (Call Us) <a href="tel:+251930641483" className="top-bar-phone">+251 930 64 14 83</a>
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* 🏃 ኒውና የተስተካከለ፡ ድግግሞሽ እንዳይመስል ሰፊ ቦታና ፍጥነት የተስተካከለለት ባነር */}
+      {view === "public" && (
+        <div className="web-marquee-banner">
+          <div className="web-marquee-content">
+            <span className="marquee-text-span">{promoText}</span>
+            <span className="marquee-text-span">{promoText}</span>
           </div>
         </div>
       )}
@@ -383,9 +395,10 @@ function App() {
             </>
           )}
 
+          {/* 🔐 Login እና ሌሎች በተኖች */}
           {view === "public" && (
             <button type="button" className="admin-toggle-btn" onClick={() => { setDropdownOpen(false); setView("login_page"); }}>
-              <LogIn size={15} /> <span>ግባ (Login)</span>
+              <LogIn size={15} /> <span>ይግቡ(Login)</span>
             </button>
           )}
 
@@ -403,6 +416,36 @@ function App() {
         </div>
       </nav>
 
+      {/* 🎨 የድግግሞሽ ስሜትን የሚያጠፉ የሲኤስኤስ ማስተካከያዎች */}
+   <style>{`
+        @keyframes customScrollMarquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .web-marquee-banner {
+          width: 100%;
+          overflow: hidden;
+          background: #011650;
+          color: #ffffff;
+          padding: 2px 0; 
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          border-bottom: 3px dashed #facc15;
+          display: flex;
+          align-items: center; /* ፅሁፉ መሃል ላይ እንዲሆን */
+        }
+        .web-marquee-content {
+          display: inline-block;
+          white-space: nowrap;
+          animation: customScrollMarquee 30s linear infinite;
+        }
+        .marquee-text-span {
+          font-size: 12px;
+          font-weight: bold;
+          display: inline-block;
+          padding-right: 150px; 
+        }
+      `}</style>
       {/* 🔒 VIEW 1: UNIFIED LOGIN GATEWAY */}
       {view === "login_page" && (
         <div className="login-screen-wrapper" style={{ padding: '80px 20px', display: 'flex', justifyContent: 'center', backgroundColor: '#f1f5f9', minHeight: '70vh', alignItems: 'center' }}>
