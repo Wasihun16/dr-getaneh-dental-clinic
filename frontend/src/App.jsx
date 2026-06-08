@@ -768,7 +768,7 @@ function App() {
                   </div>
 
                   <div className="mini-box" style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <strong style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '5px' }}>15+</strong>
+                    <strong style={{ fontSize: '2rem', color: '#2563eb', display: 'block', marginBottom: '5px' }}>12+</strong>
                     <p style={{ fontSize: '1.05rem', margin: 0, fontWeight: '500', color: '#1e293b' }}>የዓመታት ልምድ <br/><span style={{ fontSize: '0.9rem', color: '#64748b' }}>(Years Experience)</span></p>
                   </div>
 
