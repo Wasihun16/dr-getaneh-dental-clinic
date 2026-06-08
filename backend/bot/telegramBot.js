@@ -264,8 +264,6 @@ bot.onText(/\/cancel/, async (msg) => {
         bot.sendMessage(chatId, `⚠️ አሁን ላይ ምንም የሚቋረጥ ሂደት የለም። ዋና ማውጫ ለመመለስ /start ይበሉ።\n⚠️ No active process to cancel. Type /start.`).catch(e => console.log(e.message));
     }
 });
-
-
 // ========================================================
 // 🖱️ INLINE KEYBOARD ACTIONS INTERCEPTOR (CALLBACK QUERY)
 // ========================================================
@@ -310,17 +308,36 @@ bot.on('callback_query', async (query) => {
         userStates[chatId].step = 'SELECTING_YEAR';
 
         const lang = userStates[chatId].lang;
-        
-        const yearButtons = lang === 'am' 
+        const now = new Date();
+
+        // 🔄 የአሁኑን ዓመት ከነባራዊው ሰዓት (System Date) ላይ አውቶማቲክ የማስላት ኢንጂን
+        let currentAmYear = 2018; // ፎልባክ (Fallback)
+        try {
+            const amharicDateFormatter = new Intl.DateTimeFormat('am-ET', { calendar: 'ethiopic', year: 'numeric' });
+            const amParts = amharicDateFormatter.formatToParts(now);
+            for (let part of amParts) {
+                if (part.type === 'year') currentAmYear = parseInt(part.value, 10);
+            }
+        } catch (e) {
+            console.log("Intl Amharic year calculation error, using fallback 2018");
+        }
+
+        const eatNow = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+        const currentEnYear = eatNow.getUTCFullYear();
+
+        // 📅 አዝራሮቹን (Buttons) በራሱ ጊዜ እንዲያመነጭ ማድረግ (የዘንድሮውን እና የላምነቱን ዓመት ብቻ)
+        const yearButtons = lang === 'am'
             ? [
-                [{ text: '2018 ዓ.ም', callback_data: 'year_2018 ዓ.ም' }, { text: '2019 ዓ.ም', callback_data: 'year_2019 ዓ.ም' }],
-                [{ text: '2020 ዓ.ም', callback_data: 'year_2020 ዓ.ም' }, { text: '2021 ዓ.ም', callback_data: 'year_2021 ዓ.ም' }],
-                [{ text: '2022 ዓ.ም', callback_data: 'year_2022 ዓ.ም' }, { text: '2023 ዓ.ም', callback_data: 'year_2023 ዓ.ም' }]
+                [
+                    { text: `${currentAmYear} ዓ.ም`, callback_data: `year_${currentAmYear} ዓ.ም` },
+                    { text: `${currentAmYear + 1} ዓ.ም`, callback_data: `year_${currentAmYear + 1} ዓ.ም` }
+                ]
               ]
             : [
-                [{ text: '2026', callback_data: 'year_2026' }, { text: '2027', callback_data: 'year_2027' }],
-                [{ text: '2028', callback_data: 'year_2028' }, { text: '2029', callback_data: 'year_2029' }],
-                [{ text: '2030', callback_data: 'year_2030' }, { text: '2031', callback_data: 'year_2031' }]
+                [
+                    { text: `${currentEnYear}`, callback_data: `year_${currentEnYear}` },
+                    { text: `${currentEnYear + 1}`, callback_data: `year_${currentEnYear + 1}` }
+                ]
               ];
 
         const prompt = lang === 'am' ? `📅 እባክዎ ዓመተ ምህረቱን ይምረጡ 👇` : `📅 Please select the Year 👇`;
@@ -423,7 +440,6 @@ bot.on('callback_query', async (query) => {
 
     bot.answerCallbackQuery(query.id).catch(() => {});
 });
-
 // ========================================================
 // 💬 CONTEXTUAL PATIENT CONVERSATION FLOW ENGINE
 // ========================================================
