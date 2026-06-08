@@ -8,12 +8,20 @@ const db = require('../config/db');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatId = process.env.ADMIN_CHAT_ID; 
-const bot = new TelegramBot(token, { polling: true });
 
-// 🔄 የቀድሞውን Webhook አጥፍቶ ሎካል ፖሊንግ እንዲጀምር ማድረግ
-bot.deleteWebHook().then(() => {
-    console.log('🔄 Old Webhook cleared. Polling started locally!');
-}).catch(err => console.error('❌ Webhook error:', err.message));
+// 🔄 ዘላቂ መፍትሄ፡ Render ላይ ከሆነ polling መጥፋት አለበት (በ Webhook ስለሚሰራ)
+// ኮምፒውተርህ ላይ (Local) ከሆነ ደግሞ polling ራሱ true ይሆናል
+const IS_RENDER = process.env.RENDER === 'true';
+const bot = new TelegramBot(token, { polling: !IS_RENDER });
+
+// 🔄 Render ላይ ካልሆንን ብቻ የድሮውን Webhook አጥፍቶ ሎካል ፖሊንግ እንዲጀምር ማድረግ
+if (!IS_RENDER) {
+    bot.deleteWebHook().then(() => {
+        console.log('🔄 Old Webhook cleared. Polling started locally!');
+    }).catch(err => console.error('❌ Webhook error:', err.message));
+} else {
+    console.log('🚀 Telegram Engine: Webhook route active for Render production.');
+}
 
 const userStates = {};
 const amharicMonths = ['መስከረም', 'ጥቅምት', 'ህዳር', 'ታህሳስ', 'ጥር', 'የካቲት', 'መጋቢት', 'ሚያዝያ', 'ግንቦት', 'ሰኔ', 'ሐምሌ', 'ነሐሴ', 'ጳጉሜ'];
@@ -231,7 +239,6 @@ bot.onText(/\/status/, async (msg) => {
 bot.onText(/\/cancel/, async (msg) => {
     const chatId = msg.chat.id;
 
-    // 1. ተጠቃሚው በምዝገባ ሂደት ላይ ከሆነ ሂደቱን ለማቋረጥ
     if (userStates[chatId]) {
         const lang = userStates[chatId].lang || 'am';
         delete userStates[chatId];
@@ -241,18 +248,14 @@ bot.onText(/\/cancel/, async (msg) => {
         return bot.sendMessage(chatId, reply, { reply_markup: { remove_keyboard: true } }).catch(e => console.log(e.message));
     }
 
-    // 2. ተጠቃሚው ምዝገባ ጨርሶ የተያዘ ቀጠሮ ካለው፣ ያንን ቀጠሮ ከዳታቤዝ ላይ ለመሰረዝ
     try {
-        // በመጠባበቅ ላይ ያለ (ያላለፈ) ቀጠሮ እንዳለው ፈልግ
         const [rows] = await db.query(`SELECT * FROM patients WHERE chat_id = ? AND reminder_sent != 2 ORDER BY id DESC LIMIT 1`, [chatId]);
         
         if (rows && rows.length > 0) {
-            // ቀጠሮውን Cancelled (2) አድርገው
             await db.query(`UPDATE patients SET reminder_sent = 2 WHERE id = ?`, [rows[0].id]);
             const cancelReply = `🚫 *ቀጠሮዎ በተሳካ ሁኔታ ተሰርዟል!*\nአዲስ ለመያዝ /start ይበሉ።\n\n🚫 *Your appointment has been successfully cancelled!*\nType /start to book a new one.`;
             return bot.sendMessage(chatId, cancelReply, { parse_mode: 'Markdown' }).catch(e => console.log(e.message));
         } else {
-            // ምንም ቀጠሮም ሆነ የምዝገባ ሂደት ከሌለው
             const noActiveReply = `⚠️ የሚቋረጥ ሂደት ወይም የተመዘገበ ቀጠሮ የለዎትም።\n⚠️ You don't have any active process or appointment to cancel.`;
             return bot.sendMessage(chatId, noActiveReply).catch(e => console.log(e.message));
         }
@@ -261,6 +264,7 @@ bot.onText(/\/cancel/, async (msg) => {
         bot.sendMessage(chatId, `⚠️ አሁን ላይ ምንም የሚቋረጥ ሂደት የለም። ዋና ማውጫ ለመመለስ /start ይበሉ።\n⚠️ No active process to cancel. Type /start.`).catch(e => console.log(e.message));
     }
 });
+
 
 // ========================================================
 // 🖱️ INLINE KEYBOARD ACTIONS INTERCEPTOR (CALLBACK QUERY)
